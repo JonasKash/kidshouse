@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Loader2, Copy, CheckCheck } from 'lucide-react';
 
 interface PixFormProps {
@@ -93,6 +93,17 @@ export default function PixForm({ payerData, total, orderBump, cartItems, onSucc
     }
   };
 
+  // Automatic polling for payment status
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (qrData?.paymentId && verifyResult !== 'approved') {
+      interval = setInterval(() => {
+        handleVerifyPayment();
+      }, 5000);
+    }
+    return () => clearInterval(interval);
+  }, [qrData?.paymentId, verifyResult]);
+
   if (qrData) {
     return (
       <div className="text-center space-y-5">
@@ -151,47 +162,19 @@ export default function PixForm({ payerData, total, orderBump, cartItems, onSucc
           </div>
         </div>
 
-        {/* Verify payment button */}
+        {/* Status indicator */}
         <div className="space-y-3">
-          {verifyResult === 'approved' && (
+          {verifyResult === 'approved' ? (
             <div className="p-4 rounded-xl text-center" style={{ background: '#ECFDF5', border: '1.5px solid #A7F3D0' }}>
               <p className="font-bold text-green-800 text-base">✅ Pagamento confirmado! Redirecionando...</p>
             </div>
-          )}
-          {verifyResult === 'pending' && (
-            <div className="p-3 rounded-xl text-sm text-amber-700 font-medium" style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}>
-              ⏳ Pagamento ainda não detectado. Aguarde alguns segundos após pagar e tente novamente.
+          ) : (
+            <div className="flex items-center justify-center gap-2 text-sm text-gray-500 py-4">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Aguardando confirmação do pagamento...</span>
             </div>
           )}
-          {verifyResult === 'failed' && (
-            <div className="p-3 rounded-xl text-sm text-red-700 font-medium" style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}>
-              ❌ Pagamento não aprovado. Verifique e tente novamente.
-            </div>
-          )}
-
-          <button
-            onClick={handleVerifyPayment}
-            disabled={verifying || verifyResult === 'approved'}
-            className="w-full h-14 text-white font-black text-base rounded-2xl flex items-center justify-center gap-3 transition-all disabled:opacity-60"
-            style={{
-              background: 'linear-gradient(135deg, #06D6A0, #00B4D8)',
-              boxShadow: '0 8px 30px rgba(0, 180, 216, 0.4)',
-              fontFamily: "'Poppins', sans-serif",
-            }}
-          >
-            {verifying ? (
-              <><Loader2 className="w-5 h-5 animate-spin" /> Verificando pagamento...</>
-            ) : verifyResult === 'approved' ? (
-              <>✅ Pagamento confirmado!</>
-            ) : (
-              <>✅ Já paguei — Verificar pagamento</>
-            )}
-          </button>
         </div>
-
-        <p className="text-xs text-gray-500">
-          Após pagar, clique em "Já paguei" para confirmar e liberar seu pedido.
-        </p>
       </div>
     );
   }
@@ -214,7 +197,7 @@ export default function PixForm({ payerData, total, orderBump, cartItems, onSucc
               {[
                 '📸 Abra o app do seu banco',
                 '🔍 Escaneie o QR Code ou cole o código',
-                '✅ Confirme na tela abaixo que pagou',
+                '⏳ O sistema reconhece o pagamento automaticamente',
               ].map((step) => (
                 <p key={step} className="text-xs text-gray-600 font-medium">
                   {step}
