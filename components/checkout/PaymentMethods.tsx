@@ -29,6 +29,15 @@ interface PaymentMethodsProps {
   }) => void;
 }
 
+interface CardSubmitData {
+  token: string;
+  installments: string;
+  paymentMethodId: string;
+  issuerId: string;
+  cardholderName: string;
+  cardholderEmail: string;
+}
+
 const tabs: { id: PaymentTab; label: string; icon: React.ReactNode; desc: string }[] = [
   {
     id: 'cartao',
@@ -56,7 +65,7 @@ export default function PaymentMethods({
   const [loading, setLoading] = useState(false);
   const [globalError, setGlobalError] = useState('');
 
-  const handleCardSubmit = useCallback(async (tokenData: any) => {
+  const handleCardSubmit = useCallback(async (tokenData: CardSubmitData) => {
     setLoading(true);
     setGlobalError('');
     try {
@@ -68,7 +77,12 @@ export default function PaymentMethods({
           installments: parseInt(tokenData.installments),
           paymentMethod: tokenData.paymentMethodId,
           issuer_id: tokenData.issuerId,
-          payer: payerData,
+          payer: {
+            ...payerData,
+            email: tokenData.cardholderEmail || payerData.email,
+            firstName: tokenData.cardholderName.split(' ')[0] || payerData.firstName,
+            lastName: tokenData.cardholderName.split(' ').slice(1).join(' ') || payerData.lastName,
+          },
           orderBump,
           cartItems,
         }),

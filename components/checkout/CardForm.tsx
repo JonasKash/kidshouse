@@ -16,6 +16,8 @@ interface CardFormData {
   installments: string;
   paymentMethodId: string;
   issuerId: string;
+  cardholderName: string;
+  cardholderEmail: string;
 }
 
 interface CardFormProps {
@@ -158,6 +160,8 @@ export default function CardForm({ amount, mpPublicKey, payerData, onToken, load
         installments,
         paymentMethodId: (result as any).payment_method_id || paymentMethodId,
         issuerId: issuerId,
+        cardholderName,
+        cardholderEmail,
       });
     } catch (err: any) {
       const msg = err?.cause?.[0]?.description || err?.message || 'Erro ao processar o cartão.';

@@ -103,10 +103,11 @@ export async function POST(req: NextRequest) {
 
     // Bloquear redirecionamento se o cartão for recusado
     if (paymentMethod !== 'pix' && payment.status === 'rejected') {
-      return NextResponse.json({ 
-        error: true, 
-        message: 'Pagamento Recusado. Verifique os dados ou tente outra forma de pagamento.' 
-      }, { status: 400 });
+      let msg = 'Pagamento Recusado. Verifique os dados ou tente outra forma.';
+      if (payment.status_detail === 'cc_rejected_high_risk') {
+        msg = 'Pagamento Recusado por segurança. Tente usar uma Aba Anônima ou outro cartão.';
+      }
+      return NextResponse.json({ error: true, message: msg }, { status: 400 });
     }
 
     return NextResponse.json({
