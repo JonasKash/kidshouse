@@ -5,11 +5,10 @@ import Image from 'next/image';
 import { ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
 
 const images = [
-  { src: '/Capa Principal 0.webp', alt: 'Mini Geladeira Kids™ — Foto Principal', emoji: '❄️' },
-  { src: '/capa principal 01.jpeg', alt: 'Mini Geladeira Kids™ — Detalhes internos', emoji: '💡' },
-  { src: '/capa principal 02.jpeg', alt: 'Mini Geladeira Kids™ — Organização', emoji: '🧒' },
+  { src: '/DM_20260311021019_001.jpg', alt: 'Mini Geladeira Kids™ — Foto Principal', emoji: '❄️' },
+  { src: '/DM_20260311023729_001.jpg', alt: 'Mini Geladeira Kids™ — Detalhes internos', emoji: '💡' },
+  { src: '/DM_20260311024543_001.webp', alt: 'Mini Geladeira Kids™ — Organização', emoji: '🧒' },
   { src: '/capa principal 03.jpeg', alt: 'Mini Geladeira Kids™ — Brincadeira', emoji: '🎁' },
-  { src: '/capa principal 04.webp', alt: 'Mini Geladeira Kids™ — Acessórios', emoji: '🥫' },
   { src: '/capa principal 05.jpeg', alt: 'Mini Geladeira Kids™ — Embalagem', emoji: '📦' },
 ];
 

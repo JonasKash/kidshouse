@@ -97,10 +97,23 @@ export default function Home() {
                     </div>
                   )}
                   <div
-                    className="h-36 flex items-center justify-center text-6xl"
-                    style={{ background: 'linear-gradient(135deg, #FFE0B2, #FFCC80)' }}
+                    className="h-36 flex items-center justify-center overflow-hidden bg-white"
                   >
-                    {product.emoji}
+                    {product.emoji === '🎱' ? (
+                      <img 
+                        src="/DM_20260311022954_001.webp" 
+                        alt={product.name} 
+                        className="w-full h-full object-cover" 
+                      />
+                    ) : product.emoji === '🎯' ? (
+                      <img 
+                        src="/DM_20260311023339_001.webp" 
+                        alt={product.name} 
+                        className="w-full h-full object-contain" 
+                      />
+                    ) : (
+                      <span className="text-6xl">{product.emoji}</span>
+                    )}
                   </div>
                   <div className="p-5">
                     <p className="font-bold text-gray-900 mb-1">{product.name}</p>
@@ -113,7 +126,7 @@ export default function Home() {
                         R$ {product.price.toFixed(2).replace('.', ',')}
                       </span>
                       <Link
-                        href="/checkout"
+                        href={`/checkout?items=${product.name.includes('2') ? 'pack2' : 'pack5'}`}
                         className="flex items-center gap-1.5 text-white text-xs font-bold px-4 py-2 rounded-full transition-all hover:scale-105"
                         style={{ background: 'linear-gradient(135deg, #06D6A0, #00B4D8)' }}
                       >

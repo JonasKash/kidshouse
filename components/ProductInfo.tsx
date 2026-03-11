@@ -7,8 +7,7 @@ import TrustBadges from './TrustBadges';
 
 const variants = [
   { id: 'azul', label: 'Azul ❄️', color: '#00B4D8', inStock: true },
-  { id: 'rosa', label: 'Rosa 🌸', color: '#FF6B9D', inStock: true },
-  { id: 'roxo', label: 'Roxo 💜', color: '#A855F7', inStock: false },
+  { id: 'rosa', label: 'Rosa 🌸', color: '#FF6B9D', inStock: false },
 ];
 
 const installments = [

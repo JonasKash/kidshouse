@@ -62,13 +62,16 @@ export default function OrderBump({
         <div className="flex items-center gap-4 mb-4">
           {/* Product image placeholder */}
           <div
-            className="w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0 text-3xl"
+            className="w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden bg-white border border-gray-100"
             style={{
-              background: 'linear-gradient(135deg, #FF8C42, #FFB800)',
-              boxShadow: '0 4px 16px rgba(255,140,66,0.3)',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.05)',
             }}
           >
-            🎱
+            <img 
+              src="/DM_20260311022954_001.webp" 
+              alt="Pack 2 Bolas Surpresa" 
+              className="w-full h-full object-cover" 
+            />
           </div>
 
           {/* Product info */}

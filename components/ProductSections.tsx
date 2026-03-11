@@ -90,11 +90,15 @@ function Section1() {
           </div>
 
           {/* Image */}
-          <div className="animate-float">
-            <PlaceholderImg
-              emoji="🧊"
-              gradient="linear-gradient(135deg, #00B4D8 0%, #0077B6 100%)"
-              label="Criança abrindo a geladeira com expressão animada"
+          <div className="animate-float rounded-3xl overflow-hidden shadow-2xl" style={{ minHeight: '380px' }}>
+            <video 
+              src="/CV 5 GEL.mp4" 
+              autoPlay 
+              muted 
+              loop 
+              playsInline 
+              className="w-full h-full object-cover"
+              style={{ minHeight: '380px' }}
             />
           </div>
         </div>
@@ -122,11 +126,12 @@ function Section2() {
       <div className="max-w-6xl mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
           {/* Image first on mobile */}
-          <div className="order-2 md:order-1">
-            <PlaceholderImg
-              emoji="⭐"
-              gradient="linear-gradient(135deg, #0077B6 0%, #023E8A 100%)"
-              label="Produto em destaque com fundo azul turquesa"
+          <div className="order-2 md:order-1 rounded-3xl overflow-hidden shadow-2xl" style={{ minHeight: '380px' }}>
+            <img 
+              src="/DM_20260311021019_001.jpg" 
+              alt="Geladeira Kids em destaque" 
+              className="w-full h-full object-cover"
+              style={{ minHeight: '380px' }}
             />
           </div>
 
@@ -196,7 +201,15 @@ function Section3() {
         />
 
         <div className="relative z-10 p-10 md:p-16 text-center">
-          <span className="text-6xl md:text-7xl block mb-6">🔮</span>
+          <div className="flex justify-center mb-6">
+            <div className="w-32 h-32 md:w-48 md:h-48 rounded-full border-4 border-white/20 shadow-2xl overflow-hidden">
+              <img 
+                src="/freepik__background__96533.jpg" 
+                alt="Bolas Surpresa Background" 
+                className="w-full h-full object-cover scale-125" 
+              />
+            </div>
+          </div>
 
           <h2
             className="text-white font-black mb-4 leading-tight"
@@ -222,19 +235,7 @@ function Section3() {
             Alimentos, bebidas, produtos de verdade em miniatura! Cada bolinha é uma surpresa!
           </p>
 
-          {/* Icon grid */}
-          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6">
-            {collectionIcons.map(({ icon, label }) => (
-              <div
-                key={label}
-                className="flex flex-col items-center gap-2 px-5 py-3 rounded-2xl"
-                style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)' }}
-              >
-                <span className="text-2xl">{icon}</span>
-                <span className="text-white font-bold text-sm">{label}</span>
-              </div>
-            ))}
-          </div>
+          {/* Icon grid removed as requested */}
         </div>
       </div>
     </section>
@@ -285,14 +286,7 @@ function Section4() {
             </p>
           </div>
 
-          {/* Image */}
-          <div>
-            <PlaceholderImg
-              emoji="🎀"
-              gradient="linear-gradient(135deg, #FF6B9D 0%, #FF8C42 100%)"
-              label="Produto embalado para presente"
-            />
-          </div>
+          <div className="hidden md:block" />
         </div>
       </div>
     </section>
@@ -315,11 +309,12 @@ function Section5() {
       <div className="max-w-6xl mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
           {/* Image */}
-          <div>
-            <PlaceholderImg
-              emoji="👧"
-              gradient="linear-gradient(135deg, #48CAE4 0%, #00B4D8 100%)"
-              label="Criança organizando miniaturas na geladeira"
+          <div className="rounded-3xl overflow-hidden shadow-2xl" style={{ minHeight: '380px' }}>
+            <img 
+              src="/DM_20260311022521_001.webp" 
+              alt="Criança brincando com a geladeira" 
+              className="w-full h-full object-cover"
+              style={{ minHeight: '380px' }}
             />
           </div>
 
@@ -367,41 +362,13 @@ function Section6() {
   return (
     <section className="py-8 md:py-12">
       <div className="max-w-6xl mx-auto px-4">
-        <div
-          className="relative rounded-3xl overflow-hidden text-center py-16 px-6"
-          style={{
-            background: 'linear-gradient(135deg, #90E0EF 0%, #48CAE4 40%, #00B4D8 100%)',
-            boxShadow: '0 12px 40px rgba(0, 180, 216, 0.3)',
-          }}
-        >
-          {/* Decorative circles */}
-          {[...Array(5)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute rounded-full opacity-20"
-              style={{
-                width: `${80 + i * 60}px`,
-                height: `${80 + i * 60}px`,
-                background: 'white',
-                top: `${-20 + i * 15}%`,
-                right: `${-5 + i * 8}%`,
-              }}
-            />
-          ))}
-
-          <p className="text-white/80 font-bold text-lg mb-2">🛒 Mini Mercado em Casa</p>
-          <h2
-            className="text-white font-black leading-tight"
-            style={{
-              fontFamily: "'Bricolage Grotesque', 'Poppins', sans-serif",
-              fontSize: 'clamp(2rem, 6vw, 4rem)',
-              textShadow: '0 2px 20px rgba(0,0,0,0.15)',
-            }}
-          >
-            É hora de brincar
-            <br />
-            de mini mercado! 🛒
-          </h2>
+        <div className="rounded-3xl overflow-hidden shadow-2xl" style={{ minHeight: '380px' }}>
+          <img 
+            src="/DM_20260311022716_001.webp" 
+            alt="É hora de brincar de mini mercado" 
+            className="w-full h-full object-cover"
+            style={{ minHeight: '380px' }}
+          />
         </div>
       </div>
     </section>
@@ -418,56 +385,7 @@ const materialFeatures = [
   { icon: '🌍', text: 'Produção sustentável e responsável' },
 ];
 
-function Section7() {
-  return (
-    <section className="py-16 md:py-24 section-alt">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          {/* Text */}
-          <div>
-            <SectionLabel>Segurança garantida</SectionLabel>
-            <h2
-              className="font-bold mb-6 leading-tight"
-              style={{
-                fontFamily: "'Poppins', sans-serif",
-                fontSize: 'clamp(1.5rem, 3.5vw, 2.25rem)',
-              }}
-            >
-              Material seguro
-              <br />
-              <span style={{ color: '#A855F7' }}>e certificado 🛡️</span>
-            </h2>
-            <div className="space-y-3">
-              {materialFeatures.map((f, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-4 p-4 rounded-2xl font-medium"
-                  style={{
-                    background: 'white',
-                    border: '1.5px solid #EDE9FE',
-                    boxShadow: '0 2px 8px rgba(168,85,247,0.06)',
-                  }}
-                >
-                  <span className="text-2xl flex-shrink-0">{f.icon}</span>
-                  <span className="text-gray-700">{f.text}</span>
-                </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Image */}
-          <div>
-            <PlaceholderImg
-              emoji="🛡️"
-              gradient="linear-gradient(135deg, #A855F7 0%, #EC4899 100%)"
-              label="Certificado de segurança ZURU"
-            />
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
 
 /* ============================================================
    SECTION 8 — Especificações Técnicas
@@ -536,7 +454,6 @@ export default function ProductSections() {
       <Section4 />
       <Section5 />
       <Section6 />
-      <Section7 />
       <Section8 />
     </>
   );

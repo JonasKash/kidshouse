@@ -171,7 +171,27 @@ export default function CheckoutForm({ mpPublicKey = '' }: { mpPublicKey?: strin
 
   const basePrice = 149.0;
   const bumpPrice = 49.9;
-  const total = orderBump ? basePrice + bumpPrice : basePrice;
+  
+  // Handing query params for additional items
+  const [initialItems, setInitialItems] = useState<{ pack2: boolean; pack5: boolean }>({
+    pack2: false,
+    pack5: false
+  });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const items = params.get('items');
+    if (items === 'pack2') setInitialItems(prev => ({ ...prev, pack2: true }));
+    if (items === 'pack5') setInitialItems(prev => ({ ...prev, pack5: true }));
+  }, []);
+
+  const pack2Price = 49.9;
+  const pack5Price = 109.9;
+  
+  const total = basePrice + 
+                (orderBump ? bumpPrice : 0) + 
+                (initialItems.pack2 ? pack2Price : 0) + 
+                (initialItems.pack5 ? pack5Price : 0);
 
   const {
     register,
@@ -451,9 +471,21 @@ export default function CheckoutForm({ mpPublicKey = '' }: { mpPublicKey?: strin
                 <span>Mini Geladeira Kids™</span>
                 <span className="font-semibold">R$ 149,00</span>
               </div>
-              {orderBump && (
+              {initialItems.pack2 && (
                 <div className="flex justify-between text-gray-600">
                   <span>Pack 2 Bolas Surpresa</span>
+                  <span className="font-semibold">R$ 49,90</span>
+                </div>
+              )}
+              {initialItems.pack5 && (
+                <div className="flex justify-between text-gray-600">
+                  <span>Pack 5 Bolas Surpresa</span>
+                  <span className="font-semibold">R$ 109,90</span>
+                </div>
+              )}
+              {orderBump && (
+                <div className="flex justify-between text-gray-600">
+                  <span>Pack 2 Bolas Surpresa (Oferta)</span>
                   <span className="font-semibold">R$ 49,90</span>
                 </div>
               )}
