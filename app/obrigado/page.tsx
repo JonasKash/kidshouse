@@ -11,17 +11,25 @@ export default function ThankYouPage() {
   const finalTotal = basePrice + total;
 
   useEffect(() => {
-    // Fire Purchase event
+    // Fire Purchase event with full item list to ensure Pixel "marking"
     if (typeof window !== 'undefined' && (window as any).fbq) {
+      const purchaseItems = [
+        { id: 'mini-geladeira-kids', quantity: 1, name: 'Mini Geladeira Kids™' },
+        ...cartItems.map(item => ({
+          id: item.id,
+          quantity: item.quantity,
+          name: item.name
+        }))
+      ];
+
       (window as any).fbq('track', 'Purchase', {
         value: finalTotal,
         currency: 'BRL',
-        contents: cartItems.map(item => ({
-          id: item.id,
-          quantity: item.quantity
-        })),
+        contents: purchaseItems.map(i => ({ id: i.id, quantity: i.quantity })),
+        content_ids: purchaseItems.map(i => i.id),
         content_type: 'product'
       });
+      console.log('[Pixel] Purchase marked:', finalTotal);
     }
     
     // Clear cart after conversion

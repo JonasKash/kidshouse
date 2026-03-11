@@ -54,9 +54,11 @@ export default function PaymentMethods({
 }: PaymentMethodsProps) {
   const [activeTab, setActiveTab] = useState<PaymentTab>('cartao');
   const [loading, setLoading] = useState(false);
+  const [globalError, setGlobalError] = useState('');
 
   const handleCardSubmit = useCallback(async (tokenData: any) => {
     setLoading(true);
+    setGlobalError('');
     try {
       const res = await fetch('/api/pagamento', {
         method: 'POST',
@@ -74,8 +76,9 @@ export default function PaymentMethods({
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Erro no pagamento');
       onSuccess({ paymentId: data.payment_id, method: 'cartao', status: data.status });
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setGlobalError(err.message || 'Erro ao processar pagamento. Verifique os dados do cartão.');
     } finally {
       setLoading(false);
     }
@@ -113,7 +116,12 @@ export default function PaymentMethods({
       </div>
 
       {/* Tab content */}
-      <div>
+      <div className="relative">
+        {globalError && (
+          <div className="mb-4 p-4 rounded-xl text-sm text-red-700 font-medium animate-in fade-in slide-in-from-top-2" style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}>
+            ⚠️ {globalError}
+          </div>
+        )}
         {activeTab === 'cartao' && (
           <CardForm
             amount={total}

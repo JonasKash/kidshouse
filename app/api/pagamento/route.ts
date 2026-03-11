@@ -101,6 +101,14 @@ export async function POST(req: NextRequest) {
 
     console.log(`[/api/pagamento] Pagamento ${payment.id} — status: ${payment.status} (${payment.status_detail})`);
 
+    // Bloquear redirecionamento se o cartão for recusado
+    if (paymentMethod !== 'pix' && payment.status === 'rejected') {
+      return NextResponse.json({ 
+        error: true, 
+        message: `Pagamento Recusado: ${payment.status_detail || 'Verifique os dados do cartão'}` 
+      }, { status: 400 });
+    }
+
     return NextResponse.json({
       status: payment.status,
       status_detail: payment.status_detail,
