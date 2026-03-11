@@ -33,71 +33,93 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
 
   // Function to initialize CardForm when MP SDK is ready
   const initializeCardForm = () => {
-    if (initializedRef.current || !window.MercadoPago || !publicKey) return;
-
-    try {
-      console.log('[CardForm] Initializing MercadoPago CardForm...');
-      const mp = new window.MercadoPago(publicKey, { locale: 'pt-BR' });
-      
-      const cardForm = mp.cardForm({
-        amount: String(amount),
-        iframe: true,
-        form: {
-          id: 'card-form',
-          cardNumber: { id: 'mp-card-number', placeholder: '•••• •••• •••• ••••' },
-          expirationDate: { id: 'mp-expiration-date', placeholder: 'MM/AA' },
-          securityCode: { id: 'mp-security-code', placeholder: 'CVV' },
-          cardholderName: { id: 'mp-cardholder-name' }, // no placeholder for normal input
-          issuer: { id: 'mp-issuer' },
-          installments: { id: 'mp-installments' },
-          identificationType: { id: 'mp-identification-type' },
-          identificationNumber: { id: 'mp-identification-number' },
-          cardholderEmail: { id: 'mp-cardholder-email' },
-        },
-        callbacks: {
-          onFormMounted: (error: any) => {
-            if (error) {
-              console.error('[CardForm] Error mounting form:', error);
-              setStatus('error');
-              return;
-            }
-            console.log('[CardForm] Form successfully mounted');
-            setFormMounted(true);
-            setStatus('ready');
-          },
-          onSubmit: (event: any) => {
-            event.preventDefault();
-            const formData = cardForm.getCardFormData();
-            onToken(formData);
-          },
-          onError: (errors: any) => {
-            console.error('[CardForm] Form errors:', errors);
-          },
-        },
-      });
-
-      cardFormRef.current = cardForm;
-      initializedRef.current = true;
-    } catch (err) {
-      console.error('[CardForm] Initialization crash:', err);
-      setStatus('error');
+    if (initializedRef.current || !window.MercadoPago || !publicKey) {
+      console.log('[CardForm] Skip init:', { initialized: initializedRef.current, hasMP: !!window.MercadoPago, hasPK: !!publicKey });
+      return;
     }
+
+    // Ensure DOM is fully ready
+    setTimeout(() => {
+      try {
+        console.log('[CardForm] Starting Initialization...');
+        const mp = new window.MercadoPago(publicKey, { locale: 'pt-BR' });
+        
+        const cardForm = mp.cardForm({
+          amount: String(amount),
+          iframe: true,
+          form: {
+            id: 'card-form',
+            cardNumber: { id: 'mp-card-number', placeholder: '•••• •••• •••• ••••' },
+            expirationDate: { id: 'mp-expiration-date', placeholder: 'MM/AA' },
+            securityCode: { id: 'mp-security-code', placeholder: 'CVV' },
+            cardholderName: { id: 'mp-cardholder-name' },
+            issuer: { id: 'mp-issuer' },
+            installments: { id: 'mp-installments' },
+            identificationType: { id: 'mp-identification-type' },
+            identificationNumber: { id: 'mp-identification-number' },
+            cardholderEmail: { id: 'mp-cardholder-email' },
+          },
+          callbacks: {
+            onFormMounted: (error: any) => {
+              if (error) {
+                console.error('[CardForm] onFormMounted error:', error);
+                // We keep going if it's just a non-critical mount error
+                if (Array.isArray(error) && error.some(e => e.code === 'invalid_parameter')) {
+                   setStatus('error');
+                   return;
+                }
+              }
+              console.log('[CardForm] Form mounted');
+              setFormMounted(true);
+              setStatus('ready');
+            },
+            onSubmit: (event: any) => {
+              event.preventDefault();
+              try {
+                const formData = cardForm.getCardFormData();
+                onToken(formData);
+              } catch (e) {
+                console.error('[CardForm] getCardFormData error:', e);
+              }
+            },
+            onError: (errors: any) => {
+              console.warn('[CardForm] SDK reported errors:', errors);
+            },
+          },
+        });
+
+        cardFormRef.current = cardForm;
+        initializedRef.current = true;
+        
+        // Fallback: show form anyway after 6s if it didn't error out
+        setTimeout(() => {
+          if (status !== 'error') setFormMounted(true);
+        }, 6000);
+
+      } catch (err) {
+        console.error('[CardForm] Global Init Error:', err);
+        setStatus('error');
+      }
+    }, 100);
   };
 
   useEffect(() => {
-    // If MP is already on window (from previous navigation), init immediately
-    if (window.MercadoPago && !initializedRef.current) {
-      initializeCardForm();
-    }
+    const checkMP = setInterval(() => {
+      if (window.MercadoPago && !initializedRef.current) {
+        initializeCardForm();
+        clearInterval(checkMP);
+      }
+    }, 500);
 
     return () => {
+      clearInterval(checkMP);
       if (cardFormRef.current) {
-        cardFormRef.current.unmount();
+        try { cardFormRef.current.unmount(); } catch(e) {}
         cardFormRef.current = null;
         initializedRef.current = false;
       }
     };
-  }, [publicKey, amount, onToken]); // Added dependencies for initializeCardForm to be up-to-date
+  }, [publicKey]);
 
   const field = 'w-full min-h-[48px] border-[1.5px] border-gray-200 rounded-xl bg-white overflow-hidden';
   const input = 'w-full h-12 px-4 border-[1.5px] border-gray-200 rounded-xl text-base outline-none bg-white focus:border-[#00B4D8]';
@@ -109,7 +131,7 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
         <AlertCircle className="w-8 h-8 text-red-400 mx-auto" />
         <p className="font-bold text-red-700 text-sm">Erro ao carregar formulário do cartão</p>
         <p className="text-red-600 text-xs">
-          {!publicKey ? 'Public Key não configurada' : 'Verifique sua conexão ou tente recarregar'}
+          {!publicKey ? 'Chave Pública não encontrada' : 'Recarregue a página ou tente usar outro navegador'}
         </p>
         <button
           onClick={() => window.location.reload()}
@@ -125,19 +147,24 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
     <>
       <Script 
         src="https://sdk.mercadopago.com/v2/mercadopago.js" 
+        strategy="afterInteractive"
         onLoad={initializeCardForm}
         onError={() => setStatus('error')}
       />
 
-      {!formMounted && (
-        <div className="flex items-center justify-center gap-2 py-8 text-gray-400 text-sm mb-2">
-          <Loader2 className="w-5 h-5 animate-spin" />
-          Carregando formulário seguro...
-        </div>
-      )}
+      <div style={{ display: formMounted ? 'none' : 'flex' }} className="items-center justify-center gap-2 py-8 text-gray-400 text-sm mb-2">
+        <Loader2 className="w-5 h-5 animate-spin" />
+        Carregando formulário seguro...
+      </div>
 
-      <form id="card-form" style={{ display: formMounted ? 'block' : 'none', transition: 'opacity 0.4s' }}>
-        <div className="space-y-4">
+      <div style={{ 
+        opacity: formMounted ? 1 : 0, 
+        height: formMounted ? 'auto' : '0', 
+        overflow: 'hidden',
+        pointerEvents: formMounted ? 'auto' : 'none',
+        transition: 'opacity 0.6s ease' 
+      }}>
+        <form id="card-form" className="space-y-4">
           <div>
             <label className={lbl}>Número do cartão</label>
             <div id="mp-card-number" className={field} style={{ padding: '0 14px', display: 'flex', alignItems: 'center' }} />
@@ -191,8 +218,8 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
           >
             {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Processando...</> : '🔒 Finalizar Compra com Segurança'}
           </button>
-        </div>
-      </form>
+        </form>
+      </div>
       <p className="text-center text-xs text-gray-400 mt-3">🔒 Pagamento 100% seguro — SSL 256-bit via Mercado Pago</p>
     </>
   );
