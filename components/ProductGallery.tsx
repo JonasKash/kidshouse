@@ -5,16 +5,12 @@ import Image from 'next/image';
 import { ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
 
 const images = [
-  { src: '/images/produto/produto-01.jpg', alt: 'Mini Geladeira Kids™ — Vista frontal azul', emoji: '❄️' },
-  { src: '/images/produto/produto-02.jpg', alt: 'Geladeira aberta com luz UV acesa', emoji: '💡' },
-  { src: '/images/produto/produto-03.jpg', alt: 'Criança segurando o produto', emoji: '🧒' },
-  { src: '/images/produto/produto-04.jpg', alt: 'Bolas surpresa ao lado da geladeira', emoji: '🎁' },
-  { src: '/images/produto/produto-05.jpg', alt: 'Miniaturas organizadas dentro da geladeira', emoji: '🥫' },
-  { src: '/images/produto/produto-06.jpg', alt: 'Close nas portas abertas com prateleiras', emoji: '🚪' },
-  { src: '/images/produto/produto-07.jpg', alt: 'Produto embalado na caixa', emoji: '📦' },
-  { src: '/images/produto/produto-08.jpg', alt: 'Criança brincando com a geladeira', emoji: '🎮' },
-  { src: '/images/produto/produto-09.jpg', alt: 'Mais de 60 miniaturas colecionáveis', emoji: '✨' },
-  { src: '/images/produto/produto-10.jpg', alt: 'Comparativo de tamanho', emoji: '📏' },
+  { src: '/Capa Principal 0.webp', alt: 'Mini Geladeira Kids™ — Foto Principal', emoji: '❄️' },
+  { src: '/capa principal 01.jpeg', alt: 'Mini Geladeira Kids™ — Detalhes internos', emoji: '💡' },
+  { src: '/capa principal 02.jpeg', alt: 'Mini Geladeira Kids™ — Organização', emoji: '🧒' },
+  { src: '/capa principal 03.jpeg', alt: 'Mini Geladeira Kids™ — Brincadeira', emoji: '🎁' },
+  { src: '/capa principal 04.webp', alt: 'Mini Geladeira Kids™ — Acessórios', emoji: '🥫' },
+  { src: '/capa principal 05.jpeg', alt: 'Mini Geladeira Kids™ — Embalagem', emoji: '📦' },
 ];
 
 // Placeholder SVG generator for missing images
@@ -89,11 +85,14 @@ export default function ProductGallery() {
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          {/* Placeholder */}
-          <PlaceholderImage
+          {/* Main Image */}
+          <Image
+            src={images[active].src}
             alt={images[active].alt}
-            emoji={images[active].emoji}
-            index={active}
+            fill
+            priority
+            className="object-cover transition-opacity duration-500"
+            sizes="(max-width: 768px) 100vw, 50vw"
           />
 
           {/* Zoom overlay */}
@@ -161,17 +160,15 @@ export default function ProductGallery() {
             }}
             aria-label={img.alt}
           >
-            <div
-              className="w-full h-full flex items-center justify-center text-xl rounded-lg"
-              style={{
-                background:
-                  i === active
-                    ? 'linear-gradient(135deg, #E0F7FA, #B2EBF2)'
-                    : 'linear-gradient(135deg, #F8F9FA, #E9ECEF)',
-              }}
-            >
-              {img.emoji}
-            </div>
+          <div className="relative w-full h-full">
+            <Image
+              src={img.src}
+              alt={img.alt}
+              fill
+              className="object-cover"
+              sizes="68px"
+            />
+          </div>
           </button>
         ))}
       </div>

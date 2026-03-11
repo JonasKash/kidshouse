@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
       transaction_amount: number;
       description: string;
       metadata: object;
-      notification_url: string;
+      notification_url?: string;
       payer: typeof payerInfo;
       payment_method_id?: string;
       token?: string;
@@ -60,11 +60,14 @@ export async function POST(req: NextRequest) {
       issuer_id?: number;
     };
 
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
+    const isPublicUrl = siteUrl.startsWith('https://');
+
     const paymentBody: PaymentBody = {
       transaction_amount: transactionAmount,
       description: 'Mini Geladeira Kids™ — GeladeiraKids',
       metadata: { items, source: 'website' },
-      notification_url: `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhook`,
+      ...(isPublicUrl && { notification_url: `${siteUrl}/api/webhook` }),
       payer: payerInfo,
     };
 

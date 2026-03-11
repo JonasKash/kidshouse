@@ -1,12 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { CreditCard, Smartphone, FileText } from 'lucide-react';
+import { CreditCard, Smartphone } from 'lucide-react';
 import CardForm from './CardForm';
 import PixForm from './PixForm';
-import BoletoForm from './BoletoForm';
 
-type PaymentTab = 'cartao' | 'pix' | 'boleto';
+type PaymentTab = 'cartao' | 'pix';
 
 interface PayerData {
   email: string;
@@ -25,8 +24,6 @@ interface PaymentMethodsProps {
     status: string;
     qrCode?: string;
     qrCodeBase64?: string;
-    barcode?: string;
-    boletoUrl?: string;
   }) => void;
 }
 
@@ -43,12 +40,6 @@ const tabs: { id: PaymentTab; label: string; icon: React.ReactNode; desc: string
     icon: <Smartphone className="w-4 h-4" />,
     desc: 'Instantâneo',
   },
-  {
-    id: 'boleto',
-    label: 'Boleto',
-    icon: <FileText className="w-4 h-4" />,
-    desc: '1–3 dias úteis',
-  },
 ];
 
 export default function PaymentMethods({
@@ -63,7 +54,7 @@ export default function PaymentMethods({
   return (
     <div>
       {/* Tabs */}
-      <div className="grid grid-cols-3 gap-2 mb-6">
+      <div className="grid grid-cols-2 gap-2 mb-6">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -136,23 +127,6 @@ export default function PaymentMethods({
                 status: 'pending',
                 qrCode: d.qrCode,
                 qrCodeBase64: d.qrCodeBase64,
-              })
-            }
-          />
-        )}
-
-        {activeTab === 'boleto' && (
-          <BoletoForm
-            payerData={payerData}
-            total={total}
-            orderBump={orderBump}
-            onSuccess={(d) =>
-              onSuccess({
-                paymentId: d.paymentId,
-                method: 'boleto',
-                status: 'pending',
-                barcode: d.barcode,
-                boletoUrl: d.url,
               })
             }
           />
