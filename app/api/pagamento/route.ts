@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { token: cardToken, installments, paymentMethod, issuer_id, payer, orderBump } = body;
+    const { token: cardToken, installments, paymentMethod, issuer_id, payer, orderBump, cartItems } = body;
 
     const items = [
       {
@@ -33,6 +33,18 @@ export async function POST(req: NextRequest) {
         quantity: 1,
         unit_price: ORDER_BUMP.price,
         currency_id: 'BRL',
+      });
+    }
+
+    if (cartItems && Array.isArray(cartItems)) {
+      cartItems.forEach((item: any) => {
+        items.push({
+          id: item.id,
+          title: item.name,
+          quantity: item.quantity,
+          unit_price: item.price,
+          currency_id: 'BRL',
+        });
       });
     }
 

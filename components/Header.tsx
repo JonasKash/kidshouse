@@ -3,10 +3,13 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ShoppingCart, Menu, X, Snowflake } from 'lucide-react';
+import { useCart } from '@/context/CartContext';
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { cartItems } = useCart();
+  const itemCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 10);
@@ -86,14 +89,21 @@ export default function Header() {
           <div className="flex items-center gap-3">
             <Link
               href="/checkout"
-              className="hidden md:flex items-center gap-2 text-white font-bold text-sm px-5 py-2 rounded-full transition-all duration-200 hover:scale-105"
+              className="relative hidden md:flex items-center gap-2 text-white font-bold text-sm px-5 py-2 rounded-full transition-all duration-200 hover:scale-105"
               style={{
                 background: 'rgba(255,255,255,0.2)',
                 border: '1.5px solid rgba(255,255,255,0.4)',
               }}
             >
-              <ShoppingCart className="w-4 h-4" />
-              Comprar Agora
+              <div className="relative">
+                <ShoppingCart className="w-4 h-4" />
+                {itemCount > 0 && (
+                  <span className="absolute -top-3 -right-3 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-[#0096C7] font-bold">
+                    {itemCount}
+                  </span>
+                )}
+              </div>
+              Carrinho
             </Link>
 
             {/* Mobile menu toggle */}
@@ -130,11 +140,18 @@ export default function Header() {
             <Link
               href="/checkout"
               onClick={() => setMobileOpen(false)}
-              className="flex items-center justify-center gap-2 text-white font-bold py-3 rounded-full mt-2"
+              className="flex items-center justify-center gap-2 text-white font-bold py-3 rounded-full mt-2 relative"
               style={{ background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.4)' }}
             >
-              <ShoppingCart className="w-4 h-4" />
-              Comprar Agora
+              <div className="relative">
+                <ShoppingCart className="w-4 h-4" />
+                {itemCount > 0 && (
+                  <span className="absolute -top-3 -right-3 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-[#0090AE] font-bold">
+                    {itemCount}
+                  </span>
+                )}
+              </div>
+              Ir para o Checkout
             </Link>
           </div>
         )}

@@ -12,10 +12,11 @@ interface PixFormProps {
   };
   total: number;
   orderBump: boolean;
+  cartItems: any[];
   onSuccess: (data: { paymentId: string; qrCode: string; qrCodeBase64: string }) => void;
 }
 
-export default function PixForm({ payerData, total, orderBump, onSuccess }: PixFormProps) {
+export default function PixForm({ payerData, total, orderBump, cartItems, onSuccess }: PixFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [qrData, setQrData] = useState<{ qrCode: string; qrCodeBase64: string } | null>(null);
@@ -37,6 +38,7 @@ export default function PixForm({ payerData, total, orderBump, onSuccess }: PixF
           paymentMethod: 'pix',
           payer: payerData,
           orderBump,
+          cartItems,
         }),
       });
 

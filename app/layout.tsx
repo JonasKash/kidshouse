@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
 import { Toaster } from 'react-hot-toast';
+import { CartProvider } from '@/context/CartContext';
+import PurchaseNotification from '@/components/PurchaseNotification';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -44,8 +46,8 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const fbPixelId = process.env.NEXT_PUBLIC_FB_PIXEL_ID;
   const gtagId = process.env.NEXT_PUBLIC_GTAG_ID;
+  const fbPixelId = '914964177968633';
 
   return (
     <html lang="pt-BR" suppressHydrationWarning>
@@ -90,6 +92,14 @@ export default function RootLayout({
             `}
           </Script>
         )}
+        <noscript>
+          <img 
+            height="1" 
+            width="1" 
+            style={{ display: 'none' }}
+            src={`https://www.facebook.com/tr?id=914964177968633&ev=PageView&noscript=1`}
+          />
+        </noscript>
 
         {/* Google Ads */}
         {gtagId && (
@@ -109,7 +119,10 @@ export default function RootLayout({
           </>
         )}
 
-        {children}
+        <CartProvider>
+          {children}
+          <PurchaseNotification />
+        </CartProvider>
 
         <Toaster
           position="top-center"

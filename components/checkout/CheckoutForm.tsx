@@ -10,6 +10,7 @@ import OrderBump from './OrderBump';
 import PaymentMethods from './PaymentMethods';
 import { initiateCheckout, addPaymentInfo } from '@/lib/pixel';
 import { beginCheckout } from '@/lib/gtag';
+import { useCart } from '@/context/CartContext';
 
 /* ============================================================
    CPF Helpers
@@ -169,29 +170,12 @@ export default function CheckoutForm({ mpPublicKey = '' }: { mpPublicKey?: strin
   const [orderBump, setOrderBump] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
 
+  const { cartItems, total: cartTotal } = useCart();
+
   const basePrice = 149.0;
   const bumpPrice = 49.9;
   
-  // Handing query params for additional items
-  const [initialItems, setInitialItems] = useState<{ pack2: boolean; pack5: boolean }>({
-    pack2: false,
-    pack5: false
-  });
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const items = params.get('items');
-    if (items === 'pack2') setInitialItems(prev => ({ ...prev, pack2: true }));
-    if (items === 'pack5') setInitialItems(prev => ({ ...prev, pack5: true }));
-  }, []);
-
-  const pack2Price = 49.9;
-  const pack5Price = 109.9;
-  
-  const total = basePrice + 
-                (orderBump ? bumpPrice : 0) + 
-                (initialItems.pack2 ? pack2Price : 0) + 
-                (initialItems.pack5 ? pack5Price : 0);
+  const total = basePrice + (orderBump ? bumpPrice : 0) + cartTotal;
 
   const {
     register,
@@ -264,7 +248,7 @@ export default function CheckoutForm({ mpPublicKey = '' }: { mpPublicKey?: strin
       ...(data.barcode && { barcode: data.barcode }),
       ...(data.boletoUrl && { boleto_url: data.boletoUrl }),
     });
-    router.push(`/sucesso?${params.toString()}`);
+    router.push(`/obrigado?${params.toString()}`);
   };
 
   return (
@@ -471,18 +455,14 @@ export default function CheckoutForm({ mpPublicKey = '' }: { mpPublicKey?: strin
                 <span>Mini Geladeira Kids™</span>
                 <span className="font-semibold">R$ 149,00</span>
               </div>
-              {initialItems.pack2 && (
-                <div className="flex justify-between text-gray-600">
-                  <span>Pack 2 Bolas Surpresa</span>
-                  <span className="font-semibold">R$ 49,90</span>
+              {cartItems.map((item) => (
+                <div key={item.id} className="flex justify-between text-gray-600">
+                  <span>{item.name} {item.quantity > 1 ? `(x${item.quantity})` : ''}</span>
+                  <span className="font-semibold">
+                    R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}
+                  </span>
                 </div>
-              )}
-              {initialItems.pack5 && (
-                <div className="flex justify-between text-gray-600">
-                  <span>Pack 5 Bolas Surpresa</span>
-                  <span className="font-semibold">R$ 109,90</span>
-                </div>
-              )}
+              ))}
               {orderBump && (
                 <div className="flex justify-between text-gray-600">
                   <span>Pack 2 Bolas Surpresa (Oferta)</span>
@@ -507,6 +487,7 @@ export default function CheckoutForm({ mpPublicKey = '' }: { mpPublicKey?: strin
           <PaymentMethods
             total={total}
             orderBump={orderBump}
+            cartItems={cartItems}
             payerData={payerData}
             mpPublicKey={mpPublicKey}
             onSuccess={handlePaymentSuccess}

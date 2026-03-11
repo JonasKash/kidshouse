@@ -17,6 +17,7 @@ interface PayerData {
 interface PaymentMethodsProps {
   total: number;
   orderBump: boolean;
+  cartItems: any[];
   payerData: PayerData;
   mpPublicKey: string;
   onSuccess: (data: {
@@ -46,6 +47,7 @@ const tabs: { id: PaymentTab; label: string; icon: React.ReactNode; desc: string
 export default function PaymentMethods({
   total,
   orderBump,
+  cartItems,
   payerData,
   mpPublicKey,
   onSuccess,
@@ -104,6 +106,7 @@ export default function PaymentMethods({
                     issuer_id: tokenData.issuerId,
                     payer: payerData,
                     orderBump,
+                    cartItems,
                   }),
                 });
                 const data = await res.json();
@@ -123,6 +126,7 @@ export default function PaymentMethods({
             payerData={payerData}
             total={total}
             orderBump={orderBump}
+            cartItems={cartItems}
             onSuccess={(d) =>
               onSuccess({
                 paymentId: d.paymentId,

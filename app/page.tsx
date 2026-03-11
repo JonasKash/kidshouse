@@ -12,8 +12,10 @@ import ReviewsSection from '@/components/ReviewsSection';
 import StickyBuyBar from '@/components/StickyBuyBar';
 import Footer from '@/components/Footer';
 import { viewContent } from '@/lib/pixel';
+import { useCart } from '@/context/CartContext';
 
 export default function Home() {
+  const { addToCart } = useCart();
   useEffect(() => {
     viewContent();
   }, []);
@@ -125,14 +127,20 @@ export default function Home() {
                       >
                         R$ {product.price.toFixed(2).replace('.', ',')}
                       </span>
-                      <Link
-                        href={`/checkout?items=${product.name.includes('2') ? 'pack2' : 'pack5'}`}
-                        className="flex items-center gap-1.5 text-white text-xs font-bold px-4 py-2 rounded-full transition-all hover:scale-105"
+                      <button
+                        onClick={() => addToCart({
+                          id: product.name.includes('2') ? 'pack2' : 'pack5',
+                          name: product.name,
+                          price: product.price,
+                          quantity: 1,
+                          emoji: product.emoji
+                        })}
+                        className="flex items-center gap-1.5 text-white text-xs font-bold px-4 py-2 rounded-full transition-all hover:scale-105 active:scale-95"
                         style={{ background: 'linear-gradient(135deg, #06D6A0, #00B4D8)' }}
                       >
                         <Zap className="w-3 h-3 fill-white" />
-                        Comprar
-                      </Link>
+                        Adicionar
+                      </button>
                     </div>
                   </div>
                 </div>
