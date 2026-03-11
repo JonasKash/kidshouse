@@ -49,76 +49,37 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
   useEffect(() => {
     isUnmounted.current = false;
     
-    const loadScript = () => {
+    const waitForSDK = () => {
       return new Promise<void>((resolve, reject) => {
-        const url = 'https://sdk.mercadopago.com/v2/mercadopago.js';
+        if (window.MercadoPago) return resolve();
         
-        const check = () => {
+        let attempts = 0;
+        const interval = setInterval(() => {
+          attempts++;
           if (window.MercadoPago) {
+            clearInterval(interval);
             resolve();
-            return true;
+          } else if (attempts > 30) { // 15 seconds
+            clearInterval(interval);
+            reject(new Error('Sistema de pagamento não respondeu. Verifique sua conexão ou AdBlock.'));
           }
-          return false;
-        };
-
-        if (check()) return;
-
-        let script = document.querySelector(`script[src="${url}"]`) as HTMLScriptElement;
-        if (!script) {
-          console.log('[MP] Creating new script tag...');
-          script = document.createElement('script');
-          script.src = url;
-          script.async = true;
-          document.body.appendChild(script);
-        } else {
-          console.log('[MP] Script tag already exists, waiting...');
-        }
-
-        const timeoutId = setTimeout(() => {
-          if (!check()) {
-            console.error('[MP] Script load timeout');
-            reject(new Error('Tempo limite de carregamento excedido. Verifique se há algum bloqueador de anúncios.'));
-          }
-        }, 20000);
-
-        const pollId = setInterval(() => {
-          if (check()) {
-            clearTimeout(timeoutId);
-            clearInterval(pollId);
-          }
-        }, 1000);
-
-        script.addEventListener('load', () => {
-          if (check()) {
-            clearTimeout(timeoutId);
-            clearInterval(pollId);
-          }
-        });
-
-        script.addEventListener('error', () => {
-          clearTimeout(timeoutId);
-          clearInterval(pollId);
-          reject(new Error('Erro ao baixar o script do Mercado Pago.'));
-        });
+        }, 500);
       });
     };
 
     const init = async () => {
-      if (initializedRef.current) {
-        console.log('[MP] Already initialized, skipping...');
-        return;
-      }
+      if (initializedRef.current) return;
 
       try {
-        console.log('[MP] Starting loading process...');
+        console.log('[MP] Waiting for global SDK...');
         setStatus('loading');
         
-        await loadScript();
+        await waitForSDK();
         
         if (isUnmounted.current) return;
-        console.log('[MP] Script available, initializing form...');
+        console.log('[MP] SDK ready, initializing...');
 
-        if (!publicKey) throw new Error('Public Key ausente');
+        if (!publicKey) throw new Error('Chave pública não configurada.');
 
         initializedRef.current = true;
         const mp = new window.MercadoPago(publicKey, { locale: 'pt-BR' });
@@ -142,12 +103,12 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
             onFormMounted: (error: any) => {
               if (isUnmounted.current) return;
               if (error) {
-                console.error('[MP] Mount Error:', error);
+                console.error('[MP] Form Mount Error:', error);
                 setFormMounted(true);
                 setStatus('ready');
                 return;
               }
-              console.log('[MP] Card form mounted');
+              console.log('[MP] Form successfully mounted');
               setFormMounted(true);
               setStatus('ready');
             },
@@ -157,18 +118,18 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
                 const formData = cardForm.getCardFormData();
                 onTokenRef.current(formData);
               } catch (e) {
-                console.error('[MP] Submit Error:', e);
+                console.error('[MP] Form Submit Error:', e);
               }
             },
             onError: (errors: any) => {
-              console.warn('[MP] SDK Errors:', errors);
+              console.warn('[MP] SDK Internal Errors:', errors);
             },
           },
         });
 
         cardFormRef.current = cardForm;
       } catch (err: any) {
-        console.error('[MP] Failure:', err?.message || err);
+        console.error('[MP] Initialization Failure:', err?.message || err);
         if (!isUnmounted.current) setStatus('error');
       }
     };

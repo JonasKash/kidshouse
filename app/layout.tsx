@@ -119,6 +119,12 @@ export default function RootLayout({
           </>
         )}
 
+        {/* Mercado Pago SDK - Load early to avoid initialization issues */}
+        <Script
+          src="https://sdk.mercadopago.com/v2/mercadopago.js"
+          strategy="beforeInteractive"
+        />
+
         <CartProvider>
           {children}
           <PurchaseNotification />
