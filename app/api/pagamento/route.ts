@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
     if (paymentMethod !== 'pix' && payment.status === 'rejected') {
       return NextResponse.json({ 
         error: true, 
-        message: `Pagamento Recusado: ${payment.status_detail || 'Verifique os dados do cartão'}` 
+        message: 'Pagamento Recusado. Verifique os dados ou tente outra forma de pagamento.' 
       }, { status: 400 });
     }
 
