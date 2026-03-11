@@ -92,6 +92,9 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
       });
 
       cardFormRef.current = cf as unknown as CardFormInstance;
+
+      // Fallback: se onFormMounted não disparar em 3s, mostra o formulário mesmo assim
+      setTimeout(() => setFormMounted(true), 3000);
     } catch (err) {
       console.error('[CardForm] init error:', err);
       setSdkStatus('error');
