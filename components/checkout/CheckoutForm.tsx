@@ -197,12 +197,12 @@ export default function CheckoutForm({
   });
 
   const watchedValues = watch(['email', 'cpf', 'firstName', 'lastName']);
-  const payerData = {
+  const payerData = React.useMemo(() => ({
     email: watchedValues[0] || '',
     cpf: (watchedValues[1] || '').replace(/\D/g, ''),
     firstName: watchedValues[2] || '',
     lastName: watchedValues[3] || '',
-  };
+  }), [watchedValues[0], watchedValues[1], watchedValues[2], watchedValues[3]]);
 
   // Fire analytics on mount
   useEffect(() => {

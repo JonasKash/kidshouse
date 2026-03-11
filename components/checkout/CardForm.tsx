@@ -47,23 +47,31 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
         if (window.MercadoPago) return resolve();
         
         const url = 'https://sdk.mercadopago.com/v2/mercadopago.js';
-        
-        // Remove ANY existing MP script to avoid stale/stuck states
-        const oldScripts = document.querySelectorAll(`script[src*="mercadopago.js"]`);
-        oldScripts.forEach(s => s.remove());
+        let script = document.querySelector(`script[src="${url}"]`) as HTMLScriptElement;
 
-        const script = document.createElement('script');
-        script.src = url;
-        script.async = true;
-        script.onload = () => {
-          console.log('[MP] Script loaded successfully');
-          resolve();
+        if (!script) {
+          script = document.createElement('script');
+          script.src = url;
+          script.async = true;
+          document.body.appendChild(script);
+        }
+
+        const onDone = () => {
+          if (window.MercadoPago) resolve();
+          else reject(new Error('SDK não disponível no objeto window.'));
         };
-        script.onerror = () => {
-          console.error('[MP] Script failed to load (blocked?)');
-          reject(new Error('Erro ao carregar o script do Mercado Pago. Verifique se há algum bloqueador de anúncios ativo.'));
-        };
-        document.body.appendChild(script);
+
+        if (script.getAttribute('data-loaded') === 'true' || window.MercadoPago) {
+          onDone();
+        } else {
+          script.addEventListener('load', () => {
+             script.setAttribute('data-loaded', 'true');
+             onDone();
+          });
+          script.addEventListener('error', () => {
+            reject(new Error('Falha ao carregar o script de pagamento. Verifique seu AdBlock.'));
+          });
+        }
       });
     };
 
