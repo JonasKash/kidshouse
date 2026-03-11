@@ -1,16 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Script from 'next/script';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 
 declare global {
   interface Window {
-    MercadoPago: new (key: string, opts: { locale: string }) => {
-      cardForm: (opts: object) => {
-        unmount: () => void;
-        getCardFormData: () => CardFormData;
-      };
-    };
+    MercadoPago: any;
   }
 }
 
@@ -32,84 +28,76 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
   const publicKey = mpPublicKey || process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || '';
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [formMounted, setFormMounted] = useState(false);
-  const cfRef = useRef<{ unmount: () => void; getCardFormData: () => CardFormData } | null>(null);
-  const doneRef = useRef(false);
-  const onTokenRef = useRef(onToken);
-  onTokenRef.current = onToken;
+  const cardFormRef = useRef<any>(null);
+  const initializedRef = useRef(false);
+
+  // Function to initialize CardForm when MP SDK is ready
+  const initializeCardForm = () => {
+    if (initializedRef.current || !window.MercadoPago || !publicKey) return;
+
+    try {
+      console.log('[CardForm] Initializing MercadoPago CardForm...');
+      const mp = new window.MercadoPago(publicKey, { locale: 'pt-BR' });
+      
+      const cardForm = mp.cardForm({
+        amount: String(amount),
+        iframe: true,
+        form: {
+          id: 'card-form',
+          cardNumber: { id: 'mp-card-number', placeholder: '•••• •••• •••• ••••' },
+          expirationDate: { id: 'mp-expiration-date', placeholder: 'MM/AA' },
+          securityCode: { id: 'mp-security-code', placeholder: 'CVV' },
+          cardholderName: { id: 'mp-cardholder-name' }, // no placeholder for normal input
+          issuer: { id: 'mp-issuer' },
+          installments: { id: 'mp-installments' },
+          identificationType: { id: 'mp-identification-type' },
+          identificationNumber: { id: 'mp-identification-number' },
+          cardholderEmail: { id: 'mp-cardholder-email' },
+        },
+        callbacks: {
+          onFormMounted: (error: any) => {
+            if (error) {
+              console.error('[CardForm] Error mounting form:', error);
+              setStatus('error');
+              return;
+            }
+            console.log('[CardForm] Form successfully mounted');
+            setFormMounted(true);
+            setStatus('ready');
+          },
+          onSubmit: (event: any) => {
+            event.preventDefault();
+            const formData = cardForm.getCardFormData();
+            onToken(formData);
+          },
+          onError: (errors: any) => {
+            console.error('[CardForm] Form errors:', errors);
+          },
+        },
+      });
+
+      cardFormRef.current = cardForm;
+      initializedRef.current = true;
+    } catch (err) {
+      console.error('[CardForm] Initialization crash:', err);
+      setStatus('error');
+    }
+  };
 
   useEffect(() => {
-    if (!publicKey) { setStatus('error'); return; }
-
-    // Ensure script is in DOM
-    const SDK = 'https://sdk.mercadopago.com/v2/mercadopago.js';
-    if (!document.querySelector(`script[src="${SDK}"]`)) {
-      const s = document.createElement('script');
-      s.src = SDK;
-      s.async = true;
-      document.head.appendChild(s);
+    // If MP is already on window (from previous navigation), init immediately
+    if (window.MercadoPago && !initializedRef.current) {
+      initializeCardForm();
     }
 
-    // Poll until window.MercadoPago is available (max 15s)
-    let tries = 0;
-    const iv = setInterval(() => {
-      tries++;
-
-      if (doneRef.current) { clearInterval(iv); return; }
-
-      if (!window.MercadoPago) {
-        if (tries >= 30) { clearInterval(iv); setStatus('error'); }
-        return;
-      }
-
-      clearInterval(iv);
-      doneRef.current = true;
-      setStatus('ready');
-
-      try {
-        const mp = new window.MercadoPago(publicKey, { locale: 'pt-BR' });
-        const cf = mp.cardForm({
-          amount: String(amount),
-          iframe: true,
-          form: {
-            id: 'card-form',
-            cardNumber: { id: 'mp-card-number', placeholder: '•••• •••• •••• ••••' },
-            expirationDate: { id: 'mp-expiration-date', placeholder: 'MM/AA' },
-            securityCode: { id: 'mp-security-code', placeholder: 'CVV' },
-            cardholderName: { id: 'mp-cardholder-name', placeholder: 'Nome no cartão' },
-            issuer: { id: 'mp-issuer' },
-            installments: { id: 'mp-installments' },
-            identificationType: { id: 'mp-identification-type' },
-            identificationNumber: { id: 'mp-identification-number', placeholder: '000.000.000-00' },
-            cardholderEmail: { id: 'mp-cardholder-email', placeholder: 'E-mail' },
-          },
-          callbacks: {
-            onFormMounted: (err: unknown) => {
-              if (err) { console.warn('[CardForm] onFormMounted warn:', err); }
-              setFormMounted(true); // always show form regardless
-            },
-            onSubmit: (event: { preventDefault: () => void }) => {
-              event.preventDefault();
-              if (!cfRef.current) return;
-              onTokenRef.current(cfRef.current.getCardFormData());
-            },
-            onError: (errs: unknown) => { console.warn('[CardForm] errs:', errs); },
-          },
-        });
-        cfRef.current = cf;
-        // fallback: show form after 5s even if onFormMounted never fires
-        setTimeout(() => setFormMounted(true), 5000);
-      } catch (e) {
-        console.error('[CardForm] cardForm() threw:', e);
-        setStatus('error');
-      }
-    }, 500);
-
     return () => {
-      clearInterval(iv);
-      cfRef.current?.unmount();
+      if (cardFormRef.current) {
+        cardFormRef.current.unmount();
+        cardFormRef.current = null;
+        initializedRef.current = false;
+      }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [publicKey, amount, onToken]); // Added dependencies for initializeCardForm to be up-to-date
 
   const field = 'w-full min-h-[48px] border-[1.5px] border-gray-200 rounded-xl bg-white overflow-hidden';
   const input = 'w-full h-12 px-4 border-[1.5px] border-gray-200 rounded-xl text-base outline-none bg-white focus:border-[#00B4D8]';
@@ -121,17 +109,10 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
         <AlertCircle className="w-8 h-8 text-red-400 mx-auto" />
         <p className="font-bold text-red-700 text-sm">Erro ao carregar formulário do cartão</p>
         <p className="text-red-600 text-xs">
-          {!publicKey ? 'Public Key não configurada' : 'Recarregue a página e tente novamente'}
+          {!publicKey ? 'Public Key não configurada' : 'Verifique sua conexão ou tente recarregar'}
         </p>
         <button
-          onClick={() => {
-            doneRef.current = false;
-            setStatus('loading');
-            setFormMounted(false);
-            // Re-run by forcing a state-driven remount via key change would be ideal,
-            // but a simple reload is most reliable
-            window.location.reload();
-          }}
+          onClick={() => window.location.reload()}
           className="flex items-center gap-2 text-xs font-bold text-red-600 mx-auto hover:text-red-800"
         >
           <RefreshCw className="w-3.5 h-3.5" /> Recarregar página
@@ -142,34 +123,44 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
 
   return (
     <>
+      <Script 
+        src="https://sdk.mercadopago.com/v2/mercadopago.js" 
+        onLoad={initializeCardForm}
+        onError={() => setStatus('error')}
+      />
+
       {!formMounted && (
-        <div className="flex items-center justify-center gap-2 py-3 text-gray-400 text-sm mb-2">
-          <Loader2 className="w-4 h-4 animate-spin" />
+        <div className="flex items-center justify-center gap-2 py-8 text-gray-400 text-sm mb-2">
+          <Loader2 className="w-5 h-5 animate-spin" />
           Carregando formulário seguro...
         </div>
       )}
 
-      <form id="card-form" style={{ opacity: formMounted ? 1 : 0.3, transition: 'opacity 0.4s' }}>
+      <form id="card-form" style={{ display: formMounted ? 'block' : 'none', transition: 'opacity 0.4s' }}>
         <div className="space-y-4">
           <div>
             <label className={lbl}>Número do cartão</label>
-            <div id="mp-card-number" className={field} style={{ padding: '12px 14px' }} />
+            <div id="mp-card-number" className={field} style={{ padding: '0 14px', display: 'flex', alignItems: 'center' }} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={lbl}>Validade</label>
-              <div id="mp-expiration-date" className={field} style={{ padding: '12px 14px' }} />
+              <div id="mp-expiration-date" className={field} style={{ padding: '0 14px', display: 'flex', alignItems: 'center' }} />
             </div>
             <div>
               <label className={lbl}>CVV</label>
-              <div id="mp-security-code" className={field} style={{ padding: '12px 14px' }} />
+              <div id="mp-security-code" className={field} style={{ padding: '0 14px', display: 'flex', alignItems: 'center' }} />
             </div>
           </div>
           <div>
             <label className={lbl}>Nome no cartão</label>
             <input type="text" id="mp-cardholder-name" className={input} placeholder="NOME SOBRENOME" style={{ textTransform: 'uppercase' }} />
           </div>
-          <select id="mp-issuer" className="hidden" />
+          
+          <div id="mp-issuer-container" className="hidden">
+            <select id="mp-issuer" />
+          </div>
+
           <div>
             <label className={lbl}>Parcelas</label>
             <select id="mp-installments" className="w-full h-12 px-4 border-[1.5px] border-gray-200 rounded-xl bg-white text-base outline-none focus:border-[#00B4D8] cursor-pointer" />
