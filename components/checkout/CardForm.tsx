@@ -46,21 +46,23 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
       return new Promise<void>((resolve, reject) => {
         if (window.MercadoPago) return resolve();
         
-        // Find existing script
-        const existingScript = document.querySelector('script[src*="mercadopago.js"]');
-        if (existingScript) {
-          existingScript.addEventListener('load', () => resolve());
-          existingScript.addEventListener('error', () => reject());
-          // If it's already there but not loaded, we wait. 
-          // If it's already there and loaded, window.MercadoPago would be true.
-          return;
-        }
+        const url = 'https://sdk.mercadopago.com/v2/mercadopago.js';
+        
+        // Remove ANY existing MP script to avoid stale/stuck states
+        const oldScripts = document.querySelectorAll(`script[src*="mercadopago.js"]`);
+        oldScripts.forEach(s => s.remove());
 
         const script = document.createElement('script');
-        script.src = 'https://sdk.mercadopago.com/v2/mercadopago.js';
+        script.src = url;
         script.async = true;
-        script.onload = () => resolve();
-        script.onerror = () => reject();
+        script.onload = () => {
+          console.log('[MP] Script loaded successfully');
+          resolve();
+        };
+        script.onerror = () => {
+          console.error('[MP] Script failed to load (blocked?)');
+          reject(new Error('Erro ao carregar o script do Mercado Pago. Verifique se há algum bloqueador de anúncios ativo.'));
+        };
         document.body.appendChild(script);
       });
     };
@@ -72,15 +74,17 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
         console.log('[MP] Starting loading process...');
         await loadScript();
         
-        // Final check with short retry
+        // Wait for object availability with timeout
         let checkAttempts = 0;
-        while (!window.MercadoPago && checkAttempts < 10) {
+        while (!window.MercadoPago && checkAttempts < 20) {
           if (isUnmounted.current) return;
           await new Promise(r => setTimeout(r, 500));
           checkAttempts++;
         }
 
-        if (!window.MercadoPago) throw new Error('SDK not found on window after loading');
+        if (!window.MercadoPago) {
+          throw new Error('Não foi possível inicializar o Mercado Pago. Tente recarregar a página.');
+        }
 
         if (isUnmounted.current || !publicKey) return;
 
@@ -132,8 +136,8 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
         });
 
         cardFormRef.current = cardForm;
-      } catch (err) {
-        console.error('[MP] Initialization Failure:', err);
+      } catch (err: any) {
+        console.error('[MP] Initialization Failure:', err?.message || err);
         if (!isUnmounted.current) setStatus('error');
       }
     };
@@ -156,11 +160,19 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
 
   if (status === 'error') {
     return (
-      <div className="p-5 rounded-2xl text-center space-y-3" style={{ background: '#FEF2F2', border: '1.5px solid #FECACA' }}>
-        <AlertCircle className="w-8 h-8 text-red-400 mx-auto" />
-        <p className="font-bold text-red-700 text-sm">Erro ao carregar checkout</p>
-        <button onClick={() => window.location.reload()} className="text-xs font-bold text-red-600 flex items-center gap-1 mx-auto underline">
-          <RefreshCw className="w-3 h-3" /> Tentar novamente
+      <div className="p-8 rounded-2xl bg-red-50 border border-red-100 text-center animate-in fade-in zoom-in duration-300">
+        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <span className="text-3xl text-red-500">!</span>
+        </div>
+        <p className="text-red-700 font-bold text-lg mb-2">Erro ao carregar checkout</p>
+        <p className="text-red-600 text-sm mb-4 max-w-[280px] mx-auto">
+          Não conseguimos conectar com o Mercado Pago. Por favor, <strong>desative seu AdBlock</strong> e tente novamente.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="flex items-center gap-2 mx-auto font-bold text-red-600 hover:underline transition-all"
+        >
+          <span className="text-xl">↻</span> Tentar novamente
         </button>
       </div>
     );
