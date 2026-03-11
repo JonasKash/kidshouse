@@ -143,6 +143,10 @@ export default function CardForm({ amount, mpPublicKey, payerData, onToken, load
       setError('Informe o número do documento.');
       return;
     }
+    if (!paymentMethodId) {
+      setError('Bandeira do cartão não identificada. Verifique o número do cartão e aguarde um instante antes de tentar novamente.');
+      return;
+    }
 
     try {
       const result = await createCardToken({
@@ -158,13 +162,29 @@ export default function CardForm({ amount, mpPublicKey, payerData, onToken, load
       onToken({
         token: result.id,
         installments,
-        paymentMethodId: (result as any).payment_method_id || paymentMethodId,
+        paymentMethodId: paymentMethodId,
         issuerId: issuerId,
         cardholderName,
         cardholderEmail,
       });
     } catch (err: any) {
-      const msg = err?.cause?.[0]?.description || err?.message || 'Erro ao processar o cartão.';
+      const cause = err?.cause?.[0];
+      const codeMessages: Record<string, string> = {
+        '205': 'Número do cartão inválido.',
+        '208': 'Data de validade inválida.',
+        '209': 'CVV inválido.',
+        '212': 'CPF inválido.',
+        '213': 'Nome no cartão inválido.',
+        '214': 'Nome no cartão muito curto.',
+        '220': 'Banco emissor não encontrado.',
+        '221': 'Nome no cartão inválido.',
+        '224': 'CVV obrigatório.',
+        'E301': 'Número do cartão inválido.',
+        'E302': 'CVV inválido.',
+        'E303': 'Data de validade inválida.',
+        'E304': 'Data de validade inválida.',
+      };
+      const msg = (cause?.code && codeMessages[cause.code]) || cause?.description || err?.message || 'Erro ao processar o cartão. Verifique os dados e tente novamente.';
       setError(msg);
     }
   };

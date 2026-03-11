@@ -197,19 +197,22 @@ export default function CheckoutForm({
     mode: 'onTouched', // mostra erros ao sair do campo, não só no submit
   });
 
-  const watchedValues = watch(['email', 'cpf', 'firstName', 'lastName']);
+  const watchedValues = watch(['email', 'cpf', 'firstName', 'lastName', 'phone', 'cep', 'street', 'number', 'neighborhood', 'city', 'state']);
   const payerData = React.useMemo(() => ({
     email: watchedValues[0] || '',
     cpf: (watchedValues[1] || '').replace(/\D/g, ''),
     firstName: watchedValues[2] || '',
     lastName: watchedValues[3] || '',
-  }), [watchedValues[0], watchedValues[1], watchedValues[2], watchedValues[3]]);
+    phone: (watchedValues[4] || '').replace(/\D/g, ''),
+    cep: (watchedValues[5] || '').replace(/\D/g, ''),
+    street: watchedValues[6] || '',
+    number: watchedValues[7] || '',
+    neighborhood: watchedValues[8] || '',
+    city: watchedValues[9] || '',
+    state: watchedValues[10] || '',
+  }), [watchedValues[0], watchedValues[1], watchedValues[2], watchedValues[3], watchedValues[4], watchedValues[5], watchedValues[6], watchedValues[7], watchedValues[8], watchedValues[9], watchedValues[10]]);
 
-  // Fire analytics on mount
-  useEffect(() => {
-    initiateCheckout(basePrice);
-    beginCheckout(basePrice);
-  }, [basePrice]);
+
 
   // CEP autocomplete
   const handleCepBlur = async (cep: string) => {
@@ -247,6 +250,10 @@ export default function CheckoutForm({
         status: 'partial_step_1',
         updated_at: new Date().toISOString()
       }, { onConflict: 'email,cpf' });
+
+      // Track qualified lead
+      initiateCheckout(basePrice);
+      beginCheckout(basePrice);
     }
   };
 
@@ -293,6 +300,24 @@ export default function CheckoutForm({
     });
     router.push(`/obrigado?${params.toString()}`);
   }, [router, total]);
+
+  // Sync Order Bump change to Supabase in real-time (Step 3)
+  useEffect(() => {
+    if (step === 3) {
+      const data = watch();
+      if (data.email && data.cpf) {
+        supabase
+          .from('checkouts')
+          .update({ 
+            order_bump: orderBump,
+            total: total, // Atualiza o total também
+            updated_at: new Date().toISOString()
+          })
+          .match({ email: data.email, cpf: data.cpf })
+          .then();
+      }
+    }
+  }, [orderBump, step, total, watch]);
 
   return (
     <div className="max-w-xl mx-auto">

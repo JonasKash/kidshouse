@@ -60,6 +60,50 @@ export async function POST(req: NextRequest) {
       last_name: payer.lastName,
     };
 
+    // Build additional_info for anti-fraud scoring
+    const phoneClean = (payer.phone || '').replace(/\D/g, '');
+    const cepClean = (payer.cep || '').replace(/\D/g, '');
+    const additionalInfo: Record<string, unknown> = {
+      items: items.map((item) => ({
+        id: item.id,
+        title: item.title,
+        description: item.title,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        category_id: 'toys',
+      })),
+      payer: {
+        first_name: payer.firstName,
+        last_name: payer.lastName,
+        is_prime_user: '0',
+        is_first_purchase_online: '1',
+        ...(phoneClean.length >= 10 && {
+          phone: {
+            area_code: phoneClean.slice(0, 2),
+            number: phoneClean.slice(2),
+          },
+        }),
+        ...(payer.street && {
+          address: {
+            street_name: payer.street,
+            street_number: payer.number || '',
+            zip_code: cepClean,
+          },
+        }),
+      },
+      ...(payer.street && {
+        shipments: {
+          receiver_address: {
+            zip_code: cepClean,
+            state_name: payer.state || '',
+            city_name: payer.city || '',
+            street_name: payer.street || '',
+            street_number: payer.number || '',
+          },
+        },
+      }),
+    };
+
     type PaymentBody = {
       transaction_amount: number;
       description: string;
@@ -70,6 +114,7 @@ export async function POST(req: NextRequest) {
       token?: string;
       installments?: number;
       issuer_id?: number;
+      additional_info?: Record<string, unknown>;
     };
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
@@ -91,6 +136,7 @@ export async function POST(req: NextRequest) {
       paymentBody.installments = parseInt(installments) || 1;
       paymentBody.payment_method_id = paymentMethod;
       if (issuer_id) paymentBody.issuer_id = parseInt(issuer_id) || undefined;
+      paymentBody.additional_info = additionalInfo;
     }
 
     console.log(`[/api/pagamento] Processando ${paymentMethod} — R$ ${transactionAmount}`);
@@ -103,11 +149,22 @@ export async function POST(req: NextRequest) {
 
     // Bloquear redirecionamento se o cartão for recusado
     if (paymentMethod !== 'pix' && payment.status === 'rejected') {
-      let msg = 'Pagamento Recusado. Verifique os dados ou tente outra forma.';
-      if (payment.status_detail === 'cc_rejected_high_risk') {
-        msg = 'Pagamento Recusado por segurança. Tente usar uma Aba Anônima ou outro cartão.';
-      }
-      return NextResponse.json({ error: true, message: msg }, { status: 400 });
+      const detail = payment.status_detail || '';
+      const rejectionMessages: Record<string, string> = {
+        cc_rejected_high_risk: 'Pagamento bloqueado por segurança. Tente PIX ou use outro cartão.',
+        cc_rejected_insufficient_amount: 'Saldo insuficiente. Verifique o limite do seu cartão.',
+        cc_rejected_bad_filled_card_number: 'Número do cartão inválido. Verifique e tente novamente.',
+        cc_rejected_bad_filled_date: 'Data de validade inválida. Verifique e tente novamente.',
+        cc_rejected_bad_filled_security_code: 'CVV inválido. Verifique o código de segurança do cartão.',
+        cc_rejected_call_for_authorize: 'Seu banco pediu autorização manual. Ligue para o banco e tente novamente.',
+        cc_rejected_card_disabled: 'Cartão bloqueado. Entre em contato com seu banco.',
+        cc_rejected_duplicated_payment: 'Pagamento duplicado detectado. Aguarde alguns minutos antes de tentar novamente.',
+        cc_rejected_invalid_installments: 'Parcelamento não disponível neste cartão. Tente à vista ou outro cartão.',
+        cc_rejected_max_attempts: 'Limite de tentativas atingido. Tente outro cartão ou use PIX.',
+        cc_rejected_other_reason: 'Pagamento recusado pelo banco. Tente PIX ou use outro cartão.',
+      };
+      const msg = rejectionMessages[detail] || `Pagamento recusado (${detail}). Verifique os dados ou use PIX.`;
+      return NextResponse.json({ error: true, message: msg, status_detail: detail }, { status: 400 });
     }
 
     return NextResponse.json({

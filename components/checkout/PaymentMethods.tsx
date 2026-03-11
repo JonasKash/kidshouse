@@ -12,6 +12,13 @@ interface PayerData {
   cpf: string;
   firstName: string;
   lastName: string;
+  phone?: string;
+  cep?: string;
+  street?: string;
+  number?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
 }
 
 interface PaymentMethodsProps {
@@ -78,10 +85,17 @@ export default function PaymentMethods({
           paymentMethod: tokenData.paymentMethodId,
           issuer_id: tokenData.issuerId,
           payer: {
-            ...payerData,
             email: tokenData.cardholderEmail || payerData.email,
+            cpf: payerData.cpf,
             firstName: tokenData.cardholderName.split(' ')[0] || payerData.firstName,
             lastName: tokenData.cardholderName.split(' ').slice(1).join(' ') || payerData.lastName,
+            phone: payerData.phone,
+            cep: payerData.cep,
+            street: payerData.street,
+            number: payerData.number,
+            neighborhood: payerData.neighborhood,
+            city: payerData.city,
+            state: payerData.state,
           },
           orderBump,
           cartItems,
