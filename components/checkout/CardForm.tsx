@@ -36,32 +36,51 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
   useEffect(() => {
     isUnmounted.current = false;
     
+    const loadScript = () => {
+      return new Promise<void>((resolve, reject) => {
+        if (window.MercadoPago) return resolve();
+        
+        // Find existing script
+        const existingScript = document.querySelector('script[src*="mercadopago.js"]');
+        if (existingScript) {
+          existingScript.addEventListener('load', () => resolve());
+          existingScript.addEventListener('error', () => reject());
+          // If it's already there but not loaded, we wait. 
+          // If it's already there and loaded, window.MercadoPago would be true.
+          return;
+        }
+
+        const script = document.createElement('script');
+        script.src = 'https://sdk.mercadopago.com/v2/mercadopago.js';
+        script.async = true;
+        script.onload = () => resolve();
+        script.onerror = () => reject();
+        document.body.appendChild(script);
+      });
+    };
+
     const init = async () => {
       if (initializedRef.current) return;
 
-      // Wait up to 10 seconds for MercadoPago to be available on window
-      let attempts = 0;
-      while (!window.MercadoPago && attempts < 50) {
-        if (isUnmounted.current) return;
-        await new Promise(r => setTimeout(r, 200));
-        attempts++;
-      }
-
-      if (!window.MercadoPago) {
-        console.error('[MP] SDK failed to appear on window');
-        if (!isUnmounted.current) setStatus('error');
-        return;
-      }
-
-      if (isUnmounted.current || !publicKey) {
-        console.warn('[MP] Unmounted or missing public key', { publicKey });
-        return;
-      }
-
-      console.log('[MP] Initializing SDK with amount:', amount);
-      initializedRef.current = true;
-
       try {
+        console.log('[MP] Starting loading process...');
+        await loadScript();
+        
+        // Final check with short retry
+        let checkAttempts = 0;
+        while (!window.MercadoPago && checkAttempts < 10) {
+          if (isUnmounted.current) return;
+          await new Promise(r => setTimeout(r, 500));
+          checkAttempts++;
+        }
+
+        if (!window.MercadoPago) throw new Error('SDK not found on window after loading');
+
+        if (isUnmounted.current || !publicKey) return;
+
+        console.log('[MP] Initializing SDK...');
+        initializedRef.current = true;
+
         const mp = new window.MercadoPago(publicKey, { locale: 'pt-BR' });
         
         const cardForm = mp.cardForm({
@@ -88,7 +107,6 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
                 setStatus('ready');
                 return;
               }
-              console.log('[MP] Form Mounted successfully');
               setFormMounted(true);
               setStatus('ready');
             },
@@ -109,7 +127,7 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
 
         cardFormRef.current = cardForm;
       } catch (err) {
-        console.error('[MP] Initialization Crash:', err);
+        console.error('[MP] Initialization Failure:', err);
         if (!isUnmounted.current) setStatus('error');
       }
     };
@@ -119,11 +137,7 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
     return () => {
       isUnmounted.current = true;
       if (cardFormRef.current) {
-        try { 
-          cardFormRef.current.unmount(); 
-        } catch (e) {
-          console.warn('[MP] Unmount error ignored', e);
-        }
+        try { cardFormRef.current.unmount(); } catch (e) {}
         cardFormRef.current = null;
         initializedRef.current = false;
       }

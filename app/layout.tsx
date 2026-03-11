@@ -92,10 +92,6 @@ export default function RootLayout({
             `}
           </Script>
         )}
-        <Script
-          src="https://sdk.mercadopago.com/v2/mercadopago.js"
-          strategy="beforeInteractive"
-        />
         <noscript>
           <img 
             height="1" 
