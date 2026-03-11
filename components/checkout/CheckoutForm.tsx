@@ -11,6 +11,7 @@ import PaymentMethods from './PaymentMethods';
 import { initiateCheckout, addPaymentInfo } from '@/lib/pixel';
 import { beginCheckout } from '@/lib/gtag';
 import { useCart } from '@/context/CartContext';
+import { supabase } from '@/lib/supabase';
 
 /* ============================================================
    CPF Helpers
@@ -233,7 +234,20 @@ export default function CheckoutForm({
 
   const goToStep2 = async () => {
     const ok = await trigger(['firstName', 'lastName', 'email', 'cpf', 'phone']);
-    if (ok) setStep(2);
+    if (ok) {
+      setStep(2);
+      // Save partial data as lead
+      const data = watch();
+      await supabase.from('checkouts').upsert({
+        email: data.email,
+        cpf: data.cpf,
+        first_name: data.firstName,
+        last_name: data.lastName,
+        phone: data.phone,
+        status: 'partial_step_1',
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'email,cpf' });
+    }
   };
 
   const goToStep3 = async () => {
@@ -241,6 +255,28 @@ export default function CheckoutForm({
     if (ok) {
       setStep(3);
       addPaymentInfo();
+
+      // Save full data to Supabase
+      const data = watch();
+      await supabase.from('checkouts').upsert({
+        email: data.email,
+        cpf: data.cpf,
+        first_name: data.firstName,
+        last_name: data.lastName,
+        phone: data.phone,
+        cep: data.cep,
+        street: data.street,
+        number: data.number,
+        complement: data.complement,
+        neighborhood: data.neighborhood,
+        city: data.city,
+        state: data.state,
+        total: total,
+        order_bump: orderBump,
+        cart_items: cartItems,
+        status: 'pending_payment',
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'email,cpf' });
     }
   };
 
