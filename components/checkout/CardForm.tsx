@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, memo, useCallback } from 'react';
 import {
   initMercadoPago,
   CardNumber,
   ExpirationDate,
   SecurityCode,
   createCardToken,
-  getInstallments,
   getPaymentMethods,
 } from '@mercadopago/sdk-react';
 import { Loader2, Info } from 'lucide-react';
@@ -34,11 +33,62 @@ function ShieldCheck({ className }: { className?: string }) {
   );
 }
 
+// Secure fields isolated in memo to NEVER re-render when parent state changes
+const SecureCardFields = memo(function SecureCardFields({
+  onBinChange,
+}: {
+  onBinChange: (bin: string) => void;
+}) {
+  const fieldStyle = { fontSize: '15px', fontFamily: 'Nunito, sans-serif', color: '#111827' };
+  const wrapper = {
+    height: '48px',
+    overflow: 'hidden',
+    padding: '0 14px',
+    display: 'flex',
+    alignItems: 'center',
+    border: '1.5px solid #E5E7EB',
+    borderRadius: '12px',
+    background: 'white',
+  } as React.CSSProperties;
+
+  return (
+    <>
+      <div>
+        <label className="block text-sm font-bold text-gray-700 mb-1.5">Número do cartão</label>
+        <div style={wrapper}>
+          <CardNumber
+            placeholder="•••• •••• •••• ••••"
+            style={fieldStyle}
+            onBinChange={(binData: any) => {
+              const bin = typeof binData === 'string' ? binData : binData?.bin;
+              if (bin) onBinChange(bin);
+            }}
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3 mt-4">
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-1.5">Validade</label>
+          <div style={wrapper}>
+            <ExpirationDate placeholder="MM/AA" style={fieldStyle} />
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-1.5">CVV</label>
+          <div style={wrapper}>
+            <SecurityCode placeholder="CVV" style={fieldStyle} />
+          </div>
+        </div>
+      </div>
+    </>
+  );
+});
+
 let mpInitialized = false;
 
 export default function CardForm({ amount, mpPublicKey, onToken, loading = false }: CardFormProps) {
   const publicKey = mpPublicKey || process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || 'APP_USR-97f1dfa1-c950-49a7-bf24-78c4d613f272';
-  
+
   const [cardholderName, setCardholderName] = useState('');
   const [cardholderEmail, setCardholderEmail] = useState('');
   const [docType, setDocType] = useState('CPF');
@@ -57,6 +107,19 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
     const t = setTimeout(() => setReady(true), 1200);
     return () => clearTimeout(t);
   }, [publicKey]);
+
+  const handleBinChange = useCallback(async (bin: string) => {
+    if (bin.length >= 6) {
+      try {
+        const methods = await getPaymentMethods({ bin }) as any;
+        const m = methods?.results?.[0];
+        if (m) {
+          setPaymentMethodId(m.id);
+          setIssuerId(m.issuer?.id?.toString() || '');
+        }
+      } catch {}
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,154 +169,102 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
         </div>
       )}
 
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-4"
-        style={{ display: ready ? 'block' : 'none' }}
-      >
-        <div>
-          <label className={lbl}>Número do cartão</label>
-          <div
-            className="w-full border-[1.5px] border-gray-200 rounded-xl bg-white"
-            style={{ height: '48px', overflow: 'hidden', padding: '0 14px', display: 'flex', alignItems: 'center' }}
-          >
-            <CardNumber
-              placeholder="•••• •••• •••• ••••"
-              style={{ fontSize: '15px', fontFamily: 'Nunito, sans-serif', color: '#111827' }}
-              onBinChange={async (binData: any) => {
-                const bin = typeof binData === 'string' ? binData : binData?.bin;
-                if (bin && bin.length >= 6) {
-                  try {
-                    const methods = await getPaymentMethods({ bin }) as any;
-                    const m = methods?.results?.[0];
-                    if (m) {
-                      setPaymentMethodId(m.id);
-                      setIssuerId(m.issuer?.id?.toString() || '');
-                    }
-                  } catch {}
-                }
-              }}
-            />
-          </div>
-        </div>
+      <form onSubmit={handleSubmit} style={{ display: ready ? 'block' : 'none' }}>
+        {/* Secure fields - memoized, NEVER re-render */}
+        <SecureCardFields onBinChange={handleBinChange} />
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-4 mt-4">
           <div>
-            <label className={lbl}>Validade</label>
-            <div
-              className="w-full border-[1.5px] border-gray-200 rounded-xl bg-white"
-              style={{ height: '48px', overflow: 'hidden', padding: '0 14px', display: 'flex', alignItems: 'center' }}
-            >
-              <ExpirationDate
-                placeholder="MM/AA"
-                style={{ fontSize: '15px', fontFamily: 'Nunito, sans-serif', color: '#111827' }}
-              />
-            </div>
-          </div>
-          <div>
-            <label className={lbl}>CVV</label>
-            <div
-              className="w-full border-[1.5px] border-gray-200 rounded-xl bg-white"
-              style={{ height: '48px', overflow: 'hidden', padding: '0 14px', display: 'flex', alignItems: 'center' }}
-            >
-              <SecurityCode
-                placeholder="CVV"
-                style={{ fontSize: '15px', fontFamily: 'Nunito, sans-serif', color: '#111827' }}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <label className={lbl}>Nome no cartão</label>
-          <input
-            type="text"
-            className={input}
-            placeholder="NOME COMO NO CARTÃO"
-            style={{ textTransform: 'uppercase' }}
-            value={cardholderName}
-            onChange={e => setCardholderName(e.target.value.toUpperCase())}
-            required
-          />
-        </div>
-
-        <div>
-          <label className={lbl}>Parcelas</label>
-          <select
-            className="w-full h-12 px-4 border-[1.5px] border-gray-200 rounded-xl bg-white text-base outline-none focus:border-[#00B4D8] cursor-pointer"
-            value={installments}
-            onChange={e => setInstallments(e.target.value)}
-          >
-            {Array.from({ length: 12 }, (_, i) => i + 1).map(n => (
-              <option key={n} value={String(n)}>
-                {n}x de R$ {(amount / n).toFixed(2).replace('.', ',')} {n === 1 ? '(sem juros)' : ''}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="grid grid-cols-5 gap-2">
-          <div className="col-span-2">
-            <label className={lbl}>Documento</label>
-            <select
-              className="w-full h-12 px-3 border-[1.5px] border-gray-200 rounded-xl bg-white text-sm outline-none focus:border-[#00B4D8]"
-              value={docType}
-              onChange={e => setDocType(e.target.value)}
-            >
-              <option value="CPF">CPF</option>
-              <option value="CNPJ">CNPJ</option>
-            </select>
-          </div>
-          <div className="col-span-3">
-            <label className={lbl}>Número</label>
+            <label className={lbl}>Nome no cartão</label>
             <input
               type="text"
               className={input}
-              placeholder="000.000.000-00"
-              value={docNumber}
-              onChange={e => setDocNumber(e.target.value)}
+              placeholder="NOME COMO NO CARTÃO"
+              style={{ textTransform: 'uppercase' }}
+              value={cardholderName}
+              onChange={e => setCardholderName(e.target.value.toUpperCase())}
               required
             />
           </div>
-        </div>
 
-        <div>
-          <label className={lbl}>E-mail para confirmação</label>
-          <input
-            type="email"
-            className={input}
-            placeholder="seu@email.com"
-            value={cardholderEmail}
-            onChange={e => setCardholderEmail(e.target.value)}
-            required
-          />
-        </div>
-
-        {error && (
-          <div className="p-3 rounded-xl text-sm text-red-700 font-medium" style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}>
-            ⚠️ {error}
+          <div>
+            <label className={lbl}>Parcelas</label>
+            <select
+              className="w-full h-12 px-4 border-[1.5px] border-gray-200 rounded-xl bg-white text-base outline-none focus:border-[#00B4D8] cursor-pointer"
+              value={installments}
+              onChange={e => setInstallments(e.target.value)}
+            >
+              {Array.from({ length: 12 }, (_, i) => i + 1).map(n => (
+                <option key={n} value={String(n)}>
+                  {n}x de R$ {(amount / n).toFixed(2).replace('.', ',')} {n === 1 ? '(sem juros)' : ''}
+                </option>
+              ))}
+            </select>
           </div>
-        )}
 
-        <div className="mt-2 p-3 bg-blue-50/50 rounded-xl flex items-start gap-2 border border-blue-100/50">
-          <Info className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
-          <p className="text-[10px] text-blue-600 leading-tight">
-            Seu pagamento será processado de forma segura pelo Mercado Pago. Não armazenamos seus dados de cartão.
-          </p>
+          <div className="grid grid-cols-5 gap-2">
+            <div className="col-span-2">
+              <label className={lbl}>Documento</label>
+              <select
+                className="w-full h-12 px-3 border-[1.5px] border-gray-200 rounded-xl bg-white text-sm outline-none focus:border-[#00B4D8]"
+                value={docType}
+                onChange={e => setDocType(e.target.value)}
+              >
+                <option value="CPF">CPF</option>
+                <option value="CNPJ">CNPJ</option>
+              </select>
+            </div>
+            <div className="col-span-3">
+              <label className={lbl}>Número</label>
+              <input
+                type="text"
+                className={input}
+                placeholder="000.000.000-00"
+                value={docNumber}
+                onChange={e => setDocNumber(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className={lbl}>E-mail para confirmação</label>
+            <input
+              type="email"
+              className={input}
+              placeholder="seu@email.com"
+              value={cardholderEmail}
+              onChange={e => setCardholderEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          {error && (
+            <div className="p-3 rounded-xl text-sm text-red-700 font-medium" style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}>
+              ⚠️ {error}
+            </div>
+          )}
+
+          <div className="p-3 bg-blue-50/50 rounded-xl flex items-start gap-2 border border-blue-100/50">
+            <Info className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+            <p className="text-[10px] text-blue-600 leading-tight">
+              Seu pagamento será processado de forma segura pelo Mercado Pago. Não armazenamos seus dados de cartão.
+            </p>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading || !ready}
+            className="w-full h-14 text-white font-black text-base rounded-2xl flex items-center justify-center gap-3 transition-all disabled:opacity-60 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99]"
+            style={{
+              background: loading ? '#9CA3AF' : 'linear-gradient(135deg, #06D6A0, #00B4D8)',
+              boxShadow: loading ? 'none' : '0 8px 30px rgba(0,180,216,0.4)',
+              fontFamily: "'Poppins', sans-serif",
+            }}
+          >
+            {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Processando...</> : '🔒 Finalizar Compra'}
+          </button>
         </div>
-
-        <button
-          type="submit"
-          disabled={loading || !ready}
-          className="w-full h-14 text-white font-black text-base rounded-2xl flex items-center justify-center gap-3 transition-all disabled:opacity-60 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99] mt-2"
-          style={{
-            background: loading ? '#9CA3AF' : 'linear-gradient(135deg, #06D6A0, #00B4D8)',
-            boxShadow: loading ? 'none' : '0 8px 30px rgba(0,180,216,0.4)',
-            fontFamily: "'Poppins', sans-serif",
-          }}
-        >
-          {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Processando...</> : '🔒 Finalizar Compra'}
-        </button>
       </form>
 
       <div className="flex items-center justify-center gap-2 mt-4 text-[10px] text-gray-400 font-medium">

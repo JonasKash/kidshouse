@@ -94,6 +94,8 @@ export async function POST(req: NextRequest) {
     }
 
     console.log(`[/api/pagamento] Processando ${paymentMethod} — R$ ${transactionAmount}`);
+    console.log('[/api/pagamento] payerInfo:', JSON.stringify(payerInfo));
+    console.log('[/api/pagamento] paymentBody (sem token):', JSON.stringify({ ...paymentBody, token: paymentMethod !== 'pix' ? '[OMITTED]' : undefined }));
 
     const payment = await mpPayment.create({ body: paymentBody });
 
