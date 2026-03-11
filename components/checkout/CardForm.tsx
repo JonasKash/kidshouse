@@ -114,12 +114,12 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
         <div>
           <label className={lbl}>Número do cartão</label>
           <div
-            className="w-full border-[1.5px] border-gray-200 rounded-xl bg-white overflow-hidden"
-            style={{ padding: '0 14px', display: 'flex', alignItems: 'center', minHeight: 48 }}
+            className="w-full border-[1.5px] border-gray-200 rounded-xl bg-white"
+            style={{ height: '48px', overflow: 'hidden', padding: '0 14px', display: 'flex', alignItems: 'center' }}
           >
             <CardNumber
               placeholder="•••• •••• •••• ••••"
-              style={{ fontSize: '16px', fontFamily: 'Nunito, sans-serif', color: '#111827', width: '100%', height: '48px' }}
+              style={{ fontSize: '15px', fontFamily: 'Nunito, sans-serif', color: '#111827' }}
               onBinChange={async (binData: any) => {
                 const bin = typeof binData === 'string' ? binData : binData?.bin;
                 if (bin && bin.length >= 6) {
@@ -141,24 +141,24 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
           <div>
             <label className={lbl}>Validade</label>
             <div
-              className="w-full border-[1.5px] border-gray-200 rounded-xl bg-white overflow-hidden"
-              style={{ padding: '0 14px', display: 'flex', alignItems: 'center', minHeight: 48 }}
+              className="w-full border-[1.5px] border-gray-200 rounded-xl bg-white"
+              style={{ height: '48px', overflow: 'hidden', padding: '0 14px', display: 'flex', alignItems: 'center' }}
             >
               <ExpirationDate
                 placeholder="MM/AA"
-                style={{ fontSize: '16px', fontFamily: 'Nunito, sans-serif', color: '#111827', width: '100%', height: '48px' }}
+                style={{ fontSize: '15px', fontFamily: 'Nunito, sans-serif', color: '#111827' }}
               />
             </div>
           </div>
           <div>
             <label className={lbl}>CVV</label>
             <div
-              className="w-full border-[1.5px] border-gray-200 rounded-xl bg-white overflow-hidden"
-              style={{ padding: '0 14px', display: 'flex', alignItems: 'center', minHeight: 48 }}
+              className="w-full border-[1.5px] border-gray-200 rounded-xl bg-white"
+              style={{ height: '48px', overflow: 'hidden', padding: '0 14px', display: 'flex', alignItems: 'center' }}
             >
               <SecurityCode
                 placeholder="CVV"
-                style={{ fontSize: '16px', fontFamily: 'Nunito, sans-serif', color: '#111827', width: '100%', height: '48px' }}
+                style={{ fontSize: '15px', fontFamily: 'Nunito, sans-serif', color: '#111827' }}
               />
             </div>
           </div>
