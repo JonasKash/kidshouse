@@ -30,8 +30,14 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
   const [showForceButton, setShowForceButton] = useState(false);
   
   const cardFormRef = useRef<any>(null);
+  const onTokenRef = useRef(onToken);
   const initializedRef = useRef(false);
   const isUnmounted = useRef(false);
+
+  // Update ref when onToken changes (without re-triggering effect)
+  useEffect(() => {
+    onTokenRef.current = onToken;
+  }, [onToken]);
 
   useEffect(() => {
     isUnmounted.current = false;
@@ -114,7 +120,7 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
               event.preventDefault();
               try {
                 const formData = cardForm.getCardFormData();
-                onToken(formData);
+                onTokenRef.current(formData);
               } catch (e) {
                 console.error('[MP] Submit Error:', e);
               }
@@ -142,7 +148,7 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
         initializedRef.current = false;
       }
     };
-  }, [publicKey, amount, onToken]);
+  }, [publicKey, amount]);
 
   const field = 'w-full min-h-[48px] border-[1.5px] border-gray-200 rounded-xl bg-white overflow-hidden';
   const input = 'w-full h-12 px-4 border-[1.5px] border-gray-200 rounded-xl text-base outline-none bg-white focus:border-[#00B4D8]';

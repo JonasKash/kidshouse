@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -244,7 +244,7 @@ export default function CheckoutForm({
     }
   };
 
-  const handlePaymentSuccess = (data: { paymentId: string; method: string; status: string; qrCode?: string; qrCodeBase64?: string; barcode?: string; boletoUrl?: string }) => {
+  const handlePaymentSuccess = useCallback((data: { paymentId: string; method: string; status: string; qrCode?: string; qrCodeBase64?: string; barcode?: string; boletoUrl?: string }) => {
     const params = new URLSearchParams({
       payment_id: data.paymentId,
       status: data.status,
@@ -256,7 +256,7 @@ export default function CheckoutForm({
       ...(data.boletoUrl && { boleto_url: data.boletoUrl }),
     });
     router.push(`/obrigado?${params.toString()}`);
-  };
+  }, [router, total]);
 
   return (
     <div className="max-w-xl mx-auto">

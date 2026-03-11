@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { CreditCard, Smartphone } from 'lucide-react';
 import CardForm from './CardForm';
 import PixForm from './PixForm';
@@ -89,36 +89,36 @@ export default function PaymentMethods({
       {/* Tab content */}
       <div>
         {activeTab === 'cartao' && (
-          <CardForm
-            amount={total}
-            mpPublicKey={mpPublicKey}
-            loading={loading}
-            onToken={async (tokenData) => {
-              setLoading(true);
-              try {
-                const res = await fetch('/api/pagamento', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    token: tokenData.token,
-                    installments: parseInt(tokenData.installments),
-                    paymentMethod: tokenData.paymentMethodId,
-                    issuer_id: tokenData.issuerId,
-                    payer: payerData,
-                    orderBump,
-                    cartItems,
-                  }),
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.message || 'Erro no pagamento');
-                onSuccess({ paymentId: data.payment_id, method: 'cartao', status: data.status });
-              } catch (err) {
-                console.error(err);
-              } finally {
-                setLoading(false);
-              }
-            }}
-          />
+      <CardForm
+        amount={total}
+        mpPublicKey={mpPublicKey}
+        loading={loading}
+        onToken={useCallback(async (tokenData: any) => {
+          setLoading(true);
+          try {
+            const res = await fetch('/api/pagamento', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                token: tokenData.token,
+                installments: parseInt(tokenData.installments),
+                paymentMethod: tokenData.paymentMethodId,
+                issuer_id: tokenData.issuerId,
+                payer: payerData,
+                orderBump,
+                cartItems,
+              }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Erro no pagamento');
+            onSuccess({ paymentId: data.payment_id, method: 'cartao', status: data.status });
+          } catch (err) {
+            console.error(err);
+          } finally {
+            setLoading(false);
+          }
+        }, [onSuccess, payerData, orderBump, cartItems])}
+      />
         )}
 
         {activeTab === 'pix' && (
