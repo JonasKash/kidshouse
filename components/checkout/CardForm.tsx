@@ -1,13 +1,16 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { Loader2, AlertCircle, RefreshCw, Info } from 'lucide-react';
-
-declare global {
-  interface Window {
-    MercadoPago: any;
-  }
-}
+import { useState, useEffect } from 'react';
+import {
+  initMercadoPago,
+  CardNumber,
+  ExpirationDate,
+  SecurityCode,
+  createCardToken,
+  getInstallments,
+  getPaymentMethods,
+} from '@mercadopago/sdk-react';
+import { Loader2, Info } from 'lucide-react';
 
 interface CardFormData {
   token: string;
@@ -23,264 +26,234 @@ interface CardFormProps {
   loading?: boolean;
 }
 
+function ShieldCheck({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+    </svg>
+  );
+}
+
+let mpInitialized = false;
+
 export default function CardForm({ amount, mpPublicKey, onToken, loading = false }: CardFormProps) {
   const publicKey = mpPublicKey || process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || 'APP_USR-97f1dfa1-c950-49a7-bf24-78c4d613f272';
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [formMounted, setFormMounted] = useState(false);
-  const [showForceButton, setShowForceButton] = useState(false);
   
-  const cardFormRef = useRef<any>(null);
-  const onTokenRef = useRef(onToken);
-  const initializedRef = useRef(false);
-  const isUnmounted = useRef(false);
+  const [cardholderName, setCardholderName] = useState('');
+  const [cardholderEmail, setCardholderEmail] = useState('');
+  const [docType, setDocType] = useState('CPF');
+  const [docNumber, setDocNumber] = useState('');
+  const [installments, setInstallments] = useState('1');
+  const [paymentMethodId, setPaymentMethodId] = useState('');
+  const [issuerId, setIssuerId] = useState('');
+  const [error, setError] = useState('');
+  const [ready, setReady] = useState(false);
 
-  // Update ref when onToken changes (without re-triggering effect)
   useEffect(() => {
-    onTokenRef.current = onToken;
-  }, [onToken]);
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      if (!formMounted) setShowForceButton(true);
-    }, 7000);
+    if (!mpInitialized) {
+      initMercadoPago(publicKey, { locale: 'pt-BR' });
+      mpInitialized = true;
+    }
+    const t = setTimeout(() => setReady(true), 1200);
     return () => clearTimeout(t);
-  }, [formMounted]);
+  }, [publicKey]);
 
-  useEffect(() => {
-    isUnmounted.current = false;
-    
-    const waitForSDK = () => {
-      return new Promise<void>((resolve, reject) => {
-        const check = () => {
-          if (window.MercadoPago) {
-            resolve();
-            return true;
-          }
-          return false;
-        };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
 
-        if (check()) return;
-        
-        console.log('[MP] SDK not found on start, waiting/injecting...');
-        
-        let attempts = 0;
-        const interval = setInterval(() => {
-          attempts++;
-          
-          if (check()) {
-            clearInterval(interval);
-            return;
-          }
+    if (!cardholderName.trim()) {
+      setError('Informe o nome impresso no cartão.');
+      return;
+    }
+    if (!docNumber.trim()) {
+      setError('Informe o número do documento.');
+      return;
+    }
 
-          // After 4 attempts (2s), if still not found, try a forced injection
-          if (attempts === 4) {
-             console.log('[MP] Forced rescue injection started...');
-             const s = document.createElement('script');
-             s.src = 'https://sdk.mercadopago.com/v2/mercadopago.js';
-             s.async = true;
-             document.head.appendChild(s);
-          }
-
-          if (attempts > 40) { // 20 seconds total
-            clearInterval(interval);
-            reject(new Error('Falha crítica de carregamento. O script do Mercado Pago foi bloqueado pelo seu navegador ou conexão.'));
-          }
-        }, 500);
+    try {
+      const result = await createCardToken({
+        cardholderName,
+        identificationType: docType,
+        identificationNumber: docNumber.replace(/\D/g, ''),
       });
-    };
 
-    const init = async () => {
-      if (initializedRef.current) return;
-
-      try {
-        console.log('[MP] Waiting for global SDK...');
-        setStatus('loading');
-        
-        await waitForSDK();
-        
-        if (isUnmounted.current) return;
-        console.log('[MP] SDK ready, initializing...');
-
-        if (!publicKey) throw new Error('Chave pública não configurada.');
-
-        initializedRef.current = true;
-        const mp = new window.MercadoPago(publicKey, { locale: 'pt-BR' });
-        
-        const cardForm = mp.cardForm({
-          amount: String(amount.toFixed(2)),
-          iframe: true,
-          form: {
-            id: 'card-form',
-            cardNumber: { id: 'mp-card-number', placeholder: '•••• •••• •••• ••••' },
-            expirationDate: { id: 'mp-expiration-date', placeholder: 'MM/AA' },
-            securityCode: { id: 'mp-security-code', placeholder: 'CVV' },
-            cardholderName: { id: 'mp-cardholder-name' },
-            issuer: { id: 'mp-issuer' },
-            installments: { id: 'mp-installments' },
-            identificationType: { id: 'mp-identification-type' },
-            identificationNumber: { id: 'mp-identification-number' },
-            cardholderEmail: { id: 'mp-cardholder-email' },
-          },
-          callbacks: {
-            onFormMounted: (error: any) => {
-              if (isUnmounted.current) return;
-              if (error) {
-                console.error('[MP] Form Mount Error:', error);
-                setFormMounted(true);
-                setStatus('ready');
-                return;
-              }
-              console.log('[MP] Form successfully mounted');
-              setFormMounted(true);
-              setStatus('ready');
-            },
-            onSubmit: (event: any) => {
-              event.preventDefault();
-              try {
-                const formData = cardForm.getCardFormData();
-                onTokenRef.current(formData);
-              } catch (e) {
-                console.error('[MP] Form Submit Error:', e);
-              }
-            },
-            onError: (errors: any) => {
-              console.warn('[MP] SDK Internal Errors:', errors);
-            },
-          },
-        });
-
-        cardFormRef.current = cardForm;
-      } catch (err: any) {
-        console.error('[MP] Initialization Failure:', err?.message || err);
-        if (!isUnmounted.current) setStatus('error');
+      if (!result?.id) {
+        throw new Error('Não foi possível validar os dados do cartão. Verifique e tente novamente.');
       }
-    };
 
-    init();
+      onToken({
+        token: result.id,
+        installments,
+        paymentMethodId: result.payment_method_id || paymentMethodId,
+        issuerId: issuerId,
+      });
+    } catch (err: any) {
+      const msg = err?.cause?.[0]?.description || err?.message || 'Erro ao processar o cartão.';
+      setError(msg);
+    }
+  };
 
-    return () => {
-      isUnmounted.current = true;
-      if (cardFormRef.current) {
-        try { cardFormRef.current.unmount(); } catch (e) {}
-        cardFormRef.current = null;
-        initializedRef.current = false;
-      }
-    };
-  }, [publicKey, amount]);
-
-  const field = 'w-full min-h-[48px] border-[1.5px] border-gray-200 rounded-xl bg-white overflow-hidden';
   const input = 'w-full h-12 px-4 border-[1.5px] border-gray-200 rounded-xl text-base outline-none bg-white focus:border-[#00B4D8]';
   const lbl = 'block text-sm font-bold text-gray-700 mb-1.5';
 
-  if (status === 'error') {
-    return (
-      <div className="p-8 rounded-2xl bg-red-50 border border-red-100 text-center animate-in fade-in zoom-in duration-300">
-        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <span className="text-3xl text-red-500">!</span>
-        </div>
-        <p className="text-red-700 font-bold text-lg mb-2">Erro ao carregar checkout</p>
-        <p className="text-red-600 text-sm mb-4 max-w-[280px] mx-auto">
-          Não conseguimos conectar com o Mercado Pago. Por favor, <strong>desative seu AdBlock</strong> e tente novamente.
-        </p>
-        <button
-          onClick={() => window.location.reload()}
-          className="flex items-center gap-2 mx-auto font-bold text-red-600 hover:underline transition-all"
-        >
-          <span className="text-xl">↻</span> Tentar novamente
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div className="relative">
-      {!formMounted && (
+      {!ready && (
         <div className="flex flex-col items-center justify-center py-10 text-gray-400 bg-gray-50/50 rounded-3xl border-2 border-dashed border-gray-100">
           <Loader2 className="w-8 h-8 animate-spin mb-3 text-[#00B4D8]" />
           <p className="text-sm font-medium animate-pulse">Conectando ao sistema seguro...</p>
-          
-          {showForceButton && (
-            <button 
-              onClick={() => { setFormMounted(true); setStatus('ready'); }}
-              className="mt-4 text-xs bg-white px-4 py-2 rounded-full border shadow-sm text-gray-500 hover:text-[#00B4D8]"
-            >
-              O carregamento está lento? Clique aqui.
-            </button>
-          )}
         </div>
       )}
 
-      <div style={{ 
-        opacity: formMounted ? 1 : 0, 
-        visibility: formMounted ? 'visible' : 'hidden',
-        height: formMounted ? 'auto' : '0', 
-        overflow: 'hidden',
-        transition: 'opacity 0.5s ease-in-out' 
-      }}>
-        <form id="card-form" className="space-y-4">
-          <div>
-            <label className={lbl}>Número do cartão</label>
-            <div id="mp-card-number" className={field} style={{ padding: '0 14px', display: 'flex', alignItems: 'center' }} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={lbl}>Validade</label>
-              <div id="mp-expiration-date" className={field} style={{ padding: '0 14px', display: 'flex', alignItems: 'center' }} />
-            </div>
-            <div>
-              <label className={lbl}>CVV</label>
-              <div id="mp-security-code" className={field} style={{ padding: '0 14px', display: 'flex', alignItems: 'center' }} />
-            </div>
-          </div>
-          <div>
-            <label className={lbl}>Nome no cartão</label>
-            <input type="text" id="mp-cardholder-name" className={input} placeholder="NOME COMO NO CARTÃO" style={{ textTransform: 'uppercase' }} />
-          </div>
-          
-          <div id="mp-issuer-container" className="hidden">
-            <select id="mp-issuer" />
-          </div>
-
-          <div>
-            <label className={lbl}>Parcelas</label>
-            <select id="mp-installments" className="w-full h-12 px-4 border-[1.5px] border-gray-200 rounded-xl bg-white text-base outline-none focus:border-[#00B4D8] cursor-pointer" />
-          </div>
-          <div className="grid grid-cols-5 gap-2">
-            <div className="col-span-2">
-              <label className={lbl}>Documento</label>
-              <select id="mp-identification-type" className="w-full h-12 px-3 border-[1.5px] border-gray-200 rounded-xl bg-white text-sm outline-none focus:border-[#00B4D8]" />
-            </div>
-            <div className="col-span-3">
-              <label className={lbl}>Número</label>
-              <input type="text" id="mp-identification-number" className={input} placeholder="000.000.000-00" />
-            </div>
-          </div>
-          <div>
-            <label className={lbl}>E-mail para confirmação</label>
-            <input type="email" id="mp-cardholder-email" className={input} placeholder="seu@email.com" />
-          </div>
-
-          <div className="mt-2 p-3 bg-blue-50/50 rounded-xl flex items-start gap-2 border border-blue-100/50">
-            <Info className="w-4 h-4 text-blue-400 mt-0.5" />
-            <p className="text-[10px] text-blue-600 leading-tight">
-              Seu pagamento será processado de forma segura pelo Mercado Pago. Não armazenamos seus dados de cartão.
-            </p>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading || !formMounted}
-            className="w-full h-14 text-white font-black text-base rounded-2xl flex items-center justify-center gap-3 transition-all disabled:opacity-60 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99] mt-2"
-            style={{
-              background: loading ? '#9CA3AF' : 'linear-gradient(135deg, #06D6A0, #00B4D8)',
-              boxShadow: loading ? 'none' : '0 8px 30px rgba(0,180,216,0.4)',
-              fontFamily: "'Poppins', sans-serif",
-            }}
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-4"
+        style={{ display: ready ? 'block' : 'none' }}
+      >
+        <div>
+          <label className={lbl}>Número do cartão</label>
+          <div
+            className="w-full border-[1.5px] border-gray-200 rounded-xl bg-white overflow-hidden"
+            style={{ padding: '0 14px', display: 'flex', alignItems: 'center', minHeight: 48 }}
           >
-            {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Processando...</> : '🔒 Finalizar Compra'}
-          </button>
-        </form>
-      </div>
+            <CardNumber
+              placeholder="•••• •••• •••• ••••"
+              style={{ fontSize: '16px', fontFamily: 'Nunito, sans-serif', color: '#111827', width: '100%', height: '48px' }}
+              onBinChange={async (bin) => {
+                if (bin && bin.length >= 6) {
+                  try {
+                    const methods = await getPaymentMethods({ bin }) as any;
+                    const m = methods?.results?.[0];
+                    if (m) {
+                      setPaymentMethodId(m.id);
+                      setIssuerId(m.issuer?.id?.toString() || '');
+                    }
+                  } catch {}
+                }
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className={lbl}>Validade</label>
+            <div
+              className="w-full border-[1.5px] border-gray-200 rounded-xl bg-white overflow-hidden"
+              style={{ padding: '0 14px', display: 'flex', alignItems: 'center', minHeight: 48 }}
+            >
+              <ExpirationDate
+                placeholder="MM/AA"
+                style={{ fontSize: '16px', fontFamily: 'Nunito, sans-serif', color: '#111827', width: '100%', height: '48px' }}
+              />
+            </div>
+          </div>
+          <div>
+            <label className={lbl}>CVV</label>
+            <div
+              className="w-full border-[1.5px] border-gray-200 rounded-xl bg-white overflow-hidden"
+              style={{ padding: '0 14px', display: 'flex', alignItems: 'center', minHeight: 48 }}
+            >
+              <SecurityCode
+                placeholder="CVV"
+                style={{ fontSize: '16px', fontFamily: 'Nunito, sans-serif', color: '#111827', width: '100%', height: '48px' }}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label className={lbl}>Nome no cartão</label>
+          <input
+            type="text"
+            className={input}
+            placeholder="NOME COMO NO CARTÃO"
+            style={{ textTransform: 'uppercase' }}
+            value={cardholderName}
+            onChange={e => setCardholderName(e.target.value.toUpperCase())}
+            required
+          />
+        </div>
+
+        <div>
+          <label className={lbl}>Parcelas</label>
+          <select
+            className="w-full h-12 px-4 border-[1.5px] border-gray-200 rounded-xl bg-white text-base outline-none focus:border-[#00B4D8] cursor-pointer"
+            value={installments}
+            onChange={e => setInstallments(e.target.value)}
+          >
+            {Array.from({ length: 12 }, (_, i) => i + 1).map(n => (
+              <option key={n} value={String(n)}>
+                {n}x de R$ {(amount / n).toFixed(2).replace('.', ',')} {n === 1 ? '(sem juros)' : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid grid-cols-5 gap-2">
+          <div className="col-span-2">
+            <label className={lbl}>Documento</label>
+            <select
+              className="w-full h-12 px-3 border-[1.5px] border-gray-200 rounded-xl bg-white text-sm outline-none focus:border-[#00B4D8]"
+              value={docType}
+              onChange={e => setDocType(e.target.value)}
+            >
+              <option value="CPF">CPF</option>
+              <option value="CNPJ">CNPJ</option>
+            </select>
+          </div>
+          <div className="col-span-3">
+            <label className={lbl}>Número</label>
+            <input
+              type="text"
+              className={input}
+              placeholder="000.000.000-00"
+              value={docNumber}
+              onChange={e => setDocNumber(e.target.value)}
+              required
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className={lbl}>E-mail para confirmação</label>
+          <input
+            type="email"
+            className={input}
+            placeholder="seu@email.com"
+            value={cardholderEmail}
+            onChange={e => setCardholderEmail(e.target.value)}
+            required
+          />
+        </div>
+
+        {error && (
+          <div className="p-3 rounded-xl text-sm text-red-700 font-medium" style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}>
+            ⚠️ {error}
+          </div>
+        )}
+
+        <div className="mt-2 p-3 bg-blue-50/50 rounded-xl flex items-start gap-2 border border-blue-100/50">
+          <Info className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+          <p className="text-[10px] text-blue-600 leading-tight">
+            Seu pagamento será processado de forma segura pelo Mercado Pago. Não armazenamos seus dados de cartão.
+          </p>
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading || !ready}
+          className="w-full h-14 text-white font-black text-base rounded-2xl flex items-center justify-center gap-3 transition-all disabled:opacity-60 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99] mt-2"
+          style={{
+            background: loading ? '#9CA3AF' : 'linear-gradient(135deg, #06D6A0, #00B4D8)',
+            boxShadow: loading ? 'none' : '0 8px 30px rgba(0,180,216,0.4)',
+            fontFamily: "'Poppins', sans-serif",
+          }}
+        >
+          {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Processando...</> : '🔒 Finalizar Compra'}
+        </button>
+      </form>
 
       <div className="flex items-center justify-center gap-2 mt-4 text-[10px] text-gray-400 font-medium">
         <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-green-400" /> Conexão segura SSL</span>
@@ -288,13 +261,5 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
         <span>Pagamento processado por Mercado Pago</span>
       </div>
     </div>
-  );
-}
-
-function ShieldCheck({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-    </svg>
   );
 }
