@@ -36,40 +36,36 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
   useEffect(() => {
     isUnmounted.current = false;
     
-    // Timer to show force button if loading takes too long
-    const forceTimer = setTimeout(() => {
-      if (!isUnmounted.current && !formMounted) setShowForceButton(true);
-    }, 7000);
-
     const init = async () => {
       if (initializedRef.current) return;
 
-      // 1. Ensure Script is loaded
-      if (!window.MercadoPago) {
-        console.log('[MP] Script not found, loading manually...');
-        const script = document.createElement('script');
-        script.src = 'https://sdk.mercadopago.com/v2/mercadopago.js';
-        script.async = true;
-        document.body.appendChild(script);
-        
-        await new Promise((resolve) => {
-          script.onload = resolve;
-          script.onerror = () => {
-            if (!isUnmounted.current) setStatus('error');
-          };
-        });
+      // Wait up to 10 seconds for MercadoPago to be available on window
+      let attempts = 0;
+      while (!window.MercadoPago && attempts < 50) {
+        if (isUnmounted.current) return;
+        await new Promise(r => setTimeout(r, 200));
+        attempts++;
       }
 
-      if (isUnmounted.current || !window.MercadoPago || !publicKey) return;
+      if (!window.MercadoPago) {
+        console.error('[MP] SDK failed to appear on window');
+        if (!isUnmounted.current) setStatus('error');
+        return;
+      }
 
-      console.log('[MP] Initializing SDK...');
+      if (isUnmounted.current || !publicKey) {
+        console.warn('[MP] Unmounted or missing public key', { publicKey });
+        return;
+      }
+
+      console.log('[MP] Initializing SDK with amount:', amount);
       initializedRef.current = true;
 
       try {
         const mp = new window.MercadoPago(publicKey, { locale: 'pt-BR' });
         
         const cardForm = mp.cardForm({
-          amount: String(amount),
+          amount: String(amount.toFixed(2)),
           iframe: true,
           form: {
             id: 'card-form',
@@ -88,7 +84,6 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
               if (isUnmounted.current) return;
               if (error) {
                 console.error('[MP] Mount Error:', error);
-                // We show even with non-critical errors
                 setFormMounted(true);
                 setStatus('ready');
                 return;
@@ -114,7 +109,7 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
 
         cardFormRef.current = cardForm;
       } catch (err) {
-        console.error('[MP] Crash:', err);
+        console.error('[MP] Initialization Crash:', err);
         if (!isUnmounted.current) setStatus('error');
       }
     };
@@ -123,14 +118,17 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
 
     return () => {
       isUnmounted.current = true;
-      clearTimeout(forceTimer);
       if (cardFormRef.current) {
-        try { cardFormRef.current.unmount(); } catch (e) {}
+        try { 
+          cardFormRef.current.unmount(); 
+        } catch (e) {
+          console.warn('[MP] Unmount error ignored', e);
+        }
         cardFormRef.current = null;
         initializedRef.current = false;
       }
     };
-  }, [publicKey, amount]);
+  }, [publicKey, amount, onToken]);
 
   const field = 'w-full min-h-[48px] border-[1.5px] border-gray-200 rounded-xl bg-white overflow-hidden';
   const input = 'w-full h-12 px-4 border-[1.5px] border-gray-200 rounded-xl text-base outline-none bg-white focus:border-[#00B4D8]';
