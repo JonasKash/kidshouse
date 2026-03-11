@@ -34,14 +34,16 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
   // Function to initialize CardForm when MP SDK is ready
   const initializeCardForm = () => {
     if (initializedRef.current || !window.MercadoPago || !publicKey) {
-      console.log('[CardForm] Skip init:', { initialized: initializedRef.current, hasMP: !!window.MercadoPago, hasPK: !!publicKey });
       return;
     }
+    
+    // Set flag IMMEDIATELY to prevent multiple triggerings
+    initializedRef.current = true;
+    console.log('[CardForm] Initialization starting...');
 
-    // Ensure DOM is fully ready
+    // Small delay to ensure all DOM nodes are definitely ready for the SDK to inject iframes
     setTimeout(() => {
       try {
-        console.log('[CardForm] Starting Initialization...');
         const mp = new window.MercadoPago(publicKey, { locale: 'pt-BR' });
         
         const cardForm = mp.cardForm({
@@ -63,13 +65,13 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
             onFormMounted: (error: any) => {
               if (error) {
                 console.error('[CardForm] onFormMounted error:', error);
-                // We keep going if it's just a non-critical mount error
+                // Return if critical
                 if (Array.isArray(error) && error.some(e => e.code === 'invalid_parameter')) {
                    setStatus('error');
                    return;
                 }
               }
-              console.log('[CardForm] Form mounted');
+              console.log('[CardForm] Form mounted successfully');
               setFormMounted(true);
               setStatus('ready');
             },
@@ -79,47 +81,53 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
                 const formData = cardForm.getCardFormData();
                 onToken(formData);
               } catch (e) {
-                console.error('[CardForm] getCardFormData error:', e);
+                console.error('[CardForm] Error getting form data:', e);
               }
             },
             onError: (errors: any) => {
-              console.warn('[CardForm] SDK reported errors:', errors);
+              console.warn('[CardForm] SDK errors:', errors);
             },
           },
         });
 
         cardFormRef.current = cardForm;
-        initializedRef.current = true;
         
-        // Fallback: show form anyway after 6s if it didn't error out
-        setTimeout(() => {
-          if (status !== 'error') setFormMounted(true);
-        }, 6000);
+        // Fallback safety if onFormMounted never fires but it's not a hard error
+        const timer = setTimeout(() => {
+          setFormMounted(true);
+          setStatus('ready');
+        }, 5000);
+        
+        return () => clearTimeout(timer);
 
       } catch (err) {
-        console.error('[CardForm] Global Init Error:', err);
+        console.error('[CardForm] mp.cardForm init failed:', err);
         setStatus('error');
       }
-    }, 100);
+    }, 200);
   };
 
   useEffect(() => {
-    const checkMP = setInterval(() => {
+    // Check if MP is already available every 500ms if not initialized
+    const checkInterval = setInterval(() => {
       if (window.MercadoPago && !initializedRef.current) {
         initializeCardForm();
-        clearInterval(checkMP);
+      }
+      // If initialized or errored, we can stop the interval
+      if (initializedRef.current) {
+        clearInterval(checkInterval);
       }
     }, 500);
 
     return () => {
-      clearInterval(checkMP);
+      clearInterval(checkInterval);
       if (cardFormRef.current) {
-        try { cardFormRef.current.unmount(); } catch(e) {}
+        try { cardFormRef.current.unmount(); } catch (e) { console.warn('[CardForm] unmount err', e); }
         cardFormRef.current = null;
         initializedRef.current = false;
       }
     };
-  }, [publicKey]);
+  }, [publicKey]); // Removed status to prevent re-initialization loop
 
   const field = 'w-full min-h-[48px] border-[1.5px] border-gray-200 rounded-xl bg-white overflow-hidden';
   const input = 'w-full h-12 px-4 border-[1.5px] border-gray-200 rounded-xl text-base outline-none bg-white focus:border-[#00B4D8]';
