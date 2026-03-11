@@ -297,10 +297,10 @@ function Section4() {
    SECTION 5 — O que as famílias amam
    ============================================================ */
 const familyPraises = [
-  '"Minha filha não larga desde que chegou!"',
-  '"Qualidade incrível, parece de loja!"',
-  '"A luz UV faz toda a diferença na hora de abrir"',
-  '"Já compramos 3 packs de bolinhas extras"',
+  { text: '"Minha filha não larga desde que chegou!"', image: '/testimonial_1.png' },
+  { text: '"Qualidade incrível, parece de loja!"', image: '/testimonial_2.png' },
+  { text: '"A luz UV faz toda a diferença na hora de abrir"', image: '/testimonial_3.png' },
+  { text: '"Já compramos 3 packs de bolinhas extras"', image: '/testimonial_4.png' },
 ];
 
 function Section5() {
@@ -335,16 +335,23 @@ function Section5() {
               {familyPraises.map((praise, i) => (
                 <div
                   key={i}
-                  className="flex items-start gap-3 p-4 rounded-2xl"
+                  className="flex items-center gap-4 p-3 rounded-2xl"
                   style={{
                     background: `linear-gradient(135deg, ${'#E0F7FA'}${i % 2 ? '' : '80'}, #F0FDFF)`,
                     border: '1px solid #B2EBF2',
                   }}
                 >
-                  <span className="text-2xl flex-shrink-0 mt-0.5">
-                    {['💬', '⭐', '💡', '🛍️'][i]}
-                  </span>
-                  <p className="text-gray-700 font-medium italic">{praise}</p>
+                  <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 shadow-sm border border-white">
+                    <img src={praise.image} alt="Testemunhal" className="w-full h-full object-cover" />
+                  </div>
+                  <div>
+                    <div className="flex gap-0.5 mb-1">
+                      {[1,2,3,4,5].map(star => (
+                        <span key={star} className="text-[10px]">⭐</span>
+                      ))}
+                    </div>
+                    <p className="text-gray-700 font-medium text-sm italic">{praise.text}</p>
+                  </div>
                 </div>
               ))}
             </div>

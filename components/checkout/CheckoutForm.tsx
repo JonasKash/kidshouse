@@ -164,10 +164,17 @@ function Steps({ current }: { current: number }) {
 /* ============================================================
    Main CheckoutForm
    ============================================================ */
-export default function CheckoutForm({ mpPublicKey = '' }: { mpPublicKey?: string }) {
+export default function CheckoutForm({ 
+  mpPublicKey = '',
+  orderBump,
+  setOrderBump
+}: { 
+  mpPublicKey?: string;
+  orderBump: boolean;
+  setOrderBump: (v: boolean) => void;
+}) {
   const router = useRouter();
   const [step, setStep] = useState(1);
-  const [orderBump, setOrderBump] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
 
   const { cartItems, total: cartTotal } = useCart();
@@ -456,11 +463,22 @@ export default function CheckoutForm({ mpPublicKey = '' }: { mpPublicKey?: strin
                 <span className="font-semibold">R$ 149,00</span>
               </div>
               {cartItems.map((item) => (
-                <div key={item.id} className="flex justify-between text-gray-600">
-                  <span>{item.name} {item.quantity > 1 ? `(x${item.quantity})` : ''}</span>
-                  <span className="font-semibold">
-                    R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}
-                  </span>
+                <div key={item.id} className="flex items-center gap-3 py-1">
+                  <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 border border-gray-100 bg-white shadow-sm flex items-center justify-center">
+                    {item.name.includes('2') ? (
+                       <img src="/DM_20260311022954_001.webp" alt="P2" className="w-full h-full object-cover" />
+                    ) : item.name.includes('5') ? (
+                       <img src="/DM_20260311023339_001.webp" alt="P5" className="w-full h-full object-cover" />
+                    ) : (
+                       <span className="text-xs">{item.emoji}</span>
+                    )}
+                  </div>
+                  <div className="flex-1 flex justify-between text-gray-600">
+                    <span>{item.name} {item.quantity > 1 ? `(x${item.quantity})` : ''}</span>
+                    <span className="font-semibold">
+                      R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}
+                    </span>
+                  </div>
                 </div>
               ))}
               {orderBump && (

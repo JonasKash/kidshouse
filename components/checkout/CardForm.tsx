@@ -24,7 +24,7 @@ interface CardFormProps {
 }
 
 export default function CardForm({ amount, mpPublicKey, onToken, loading = false }: CardFormProps) {
-  const publicKey = mpPublicKey || process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || '';
+  const publicKey = mpPublicKey || process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || 'APP_USR-97f1dfa1-c950-49a7-bf24-78c4d613f272';
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [formMounted, setFormMounted] = useState(false);
   const [showForceButton, setShowForceButton] = useState(false);

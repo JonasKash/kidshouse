@@ -8,8 +8,9 @@ import { useCart } from '@/context/CartContext';
 import { useEffect } from 'react';
 
 export default function CheckoutClient() {
-  const mpPublicKey = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY ?? '';
+  const mpPublicKey = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || 'APP_USR-97f1dfa1-c950-49a7-bf24-78c4d613f272';
   const { cartItems, total: cartTotal } = useCart();
+  const [orderBump, setOrderBump] = React.useState(false);
   
   useEffect(() => {
     if (typeof window !== 'undefined' && (window as any).fbq) {
@@ -18,7 +19,8 @@ export default function CheckoutClient() {
   }, []);
   
   const basePrice = 149.0;
-  const finalTotal = basePrice + cartTotal;
+  const bumpPrice = 49.9;
+  const finalTotal = basePrice + cartTotal + (orderBump ? bumpPrice : 0);
 
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(180deg, #F0FDFF 0%, #F8F9FF 60%, #FFFFFF 100%)' }}>
@@ -57,7 +59,11 @@ export default function CheckoutClient() {
             className="lg:col-span-3 bg-white rounded-3xl p-6 md:p-8"
             style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.08)', border: '1px solid #E5E7EB' }}
           >
-            <CheckoutForm mpPublicKey={mpPublicKey} />
+            <CheckoutForm 
+              mpPublicKey={mpPublicKey} 
+              orderBump={orderBump}
+              setOrderBump={setOrderBump}
+            />
           </div>
 
           {/* Order summary sidebar */}
@@ -98,9 +104,15 @@ export default function CheckoutClient() {
               {cartItems.map((item) => (
                 <div key={item.id} className="flex items-center gap-3 pb-4 mb-4" style={{ borderBottom: '1px solid #F3F4F6' }}>
                   <div
-                    className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 bg-gray-50 border border-gray-100"
+                    className="w-14 h-14 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 bg-white border border-gray-100 shadow-sm"
                   >
-                    {item.emoji}
+                    {item.name.includes('2') ? (
+                      <img src="/DM_20260311022954_001.webp" alt="Pack 2" className="w-full h-full object-cover" />
+                    ) : item.name.includes('5') ? (
+                      <img src="/DM_20260311023339_001.webp" alt="Pack 5" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-2xl">{item.emoji}</span>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-sm text-gray-900 leading-tight">
@@ -130,6 +142,12 @@ export default function CheckoutClient() {
                   <span>Desconto</span>
                   <span className="text-red-500 font-bold">- R$ 100,00</span>
                 </div>
+                {orderBump && (
+                  <div className="flex justify-between text-gray-600">
+                    <span>Pack 2 Bolas (Oferta)</span>
+                    <span>R$ {bumpPrice.toFixed(2).replace('.', ',')}</span>
+                  </div>
+                )}
               </div>
 
               <div
