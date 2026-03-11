@@ -10,6 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default function CheckoutPage() {
+  const mpPublicKey = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY ?? '';
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(180deg, #F0FDFF 0%, #F8F9FF 60%, #FFFFFF 100%)' }}>
       {/* Checkout Header */}
@@ -47,7 +48,7 @@ export default function CheckoutPage() {
             className="lg:col-span-3 bg-white rounded-3xl p-6 md:p-8"
             style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.08)', border: '1px solid #E5E7EB' }}
           >
-            <CheckoutForm />
+            <CheckoutForm mpPublicKey={mpPublicKey} />
           </div>
 
           {/* Order summary sidebar */}

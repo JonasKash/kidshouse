@@ -18,6 +18,7 @@ interface PaymentMethodsProps {
   total: number;
   orderBump: boolean;
   payerData: PayerData;
+  mpPublicKey: string;
   onSuccess: (data: {
     paymentId: string;
     method: PaymentTab;
@@ -46,6 +47,7 @@ export default function PaymentMethods({
   total,
   orderBump,
   payerData,
+  mpPublicKey,
   onSuccess,
 }: PaymentMethodsProps) {
   const [activeTab, setActiveTab] = useState<PaymentTab>('cartao');
@@ -87,6 +89,7 @@ export default function PaymentMethods({
         {activeTab === 'cartao' && (
           <CardForm
             amount={total}
+            mpPublicKey={mpPublicKey}
             loading={loading}
             onToken={async (tokenData) => {
               setLoading(true);

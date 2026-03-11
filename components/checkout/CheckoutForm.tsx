@@ -163,7 +163,7 @@ function Steps({ current }: { current: number }) {
 /* ============================================================
    Main CheckoutForm
    ============================================================ */
-export default function CheckoutForm() {
+export default function CheckoutForm({ mpPublicKey = '' }: { mpPublicKey?: string }) {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [orderBump, setOrderBump] = useState(false);
@@ -476,6 +476,7 @@ export default function CheckoutForm() {
             total={total}
             orderBump={orderBump}
             payerData={payerData}
+            mpPublicKey={mpPublicKey}
             onSuccess={handlePaymentSuccess}
           />
 

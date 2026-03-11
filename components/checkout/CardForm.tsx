@@ -28,13 +28,13 @@ interface CardFormData {
 
 interface CardFormProps {
   amount: number;
+  mpPublicKey: string;
   onToken: (data: CardFormData) => void;
   loading?: boolean;
 }
 
-const MP_PUBLIC_KEY = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || '';
-
-export default function CardForm({ amount, onToken, loading = false }: CardFormProps) {
+export default function CardForm({ amount, mpPublicKey, onToken, loading = false }: CardFormProps) {
+  const MP_PUBLIC_KEY = mpPublicKey || process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || '';
   const [sdkStatus, setSdkStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [formMounted, setFormMounted] = useState(false);
   const cardFormRef = useRef<CardFormInstance | null>(null);
@@ -96,7 +96,7 @@ export default function CardForm({ amount, onToken, loading = false }: CardFormP
       console.error('[CardForm] init error:', err);
       setSdkStatus('error');
     }
-  }, [amount, onToken]);
+  }, [amount, onToken, MP_PUBLIC_KEY]);
 
   // If SDK already loaded when component mounts (e.g., page revisit), init immediately
   useEffect(() => {
