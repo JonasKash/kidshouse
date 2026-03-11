@@ -85,7 +85,7 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
       onToken({
         token: result.id,
         installments,
-        paymentMethodId: result.payment_method_id || paymentMethodId,
+        paymentMethodId: (result as any).payment_method_id || paymentMethodId,
         issuerId: issuerId,
       });
     } catch (err: any) {
@@ -120,7 +120,8 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
             <CardNumber
               placeholder="•••• •••• •••• ••••"
               style={{ fontSize: '16px', fontFamily: 'Nunito, sans-serif', color: '#111827', width: '100%', height: '48px' }}
-              onBinChange={async (bin) => {
+              onBinChange={async (binData: any) => {
+                const bin = typeof binData === 'string' ? binData : binData?.bin;
                 if (bin && bin.length >= 6) {
                   try {
                     const methods = await getPaymentMethods({ bin }) as any;
