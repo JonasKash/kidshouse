@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
-import Script from 'next/script';
+import { useEffect, useRef, useState } from 'react';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 
 declare global {
@@ -34,29 +33,27 @@ interface CardFormProps {
 }
 
 export default function CardForm({ amount, mpPublicKey, onToken, loading = false }: CardFormProps) {
-  const MP_PUBLIC_KEY = mpPublicKey || process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || '';
-  const [sdkStatus, setSdkStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const publicKey = mpPublicKey || process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || '';
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [formMounted, setFormMounted] = useState(false);
   const cardFormRef = useRef<CardFormInstance | null>(null);
+  const initializedRef = useRef(false);
+  const onTokenRef = useRef(onToken);
+  onTokenRef.current = onToken;
 
-  const initCardForm = useCallback(() => {
-    if (!window.MercadoPago) {
-      setSdkStatus('error');
-      return;
-    }
-    if (!MP_PUBLIC_KEY || MP_PUBLIC_KEY.includes('xxxx')) {
-      setSdkStatus('error');
-      return;
-    }
+  const mount = (key: string, amt: number) => {
+    if (initializedRef.current) return;
+    if (!window.MercadoPago) { setStatus('error'); return; }
+    if (!key) { setStatus('error'); return; }
 
-    setSdkStatus('ready');
+    initializedRef.current = true;
+    setStatus('ready');
     cardFormRef.current?.unmount();
 
     try {
-      const mp = new window.MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
-
+      const mp = new window.MercadoPago(key, { locale: 'pt-BR' });
       const cf = mp.cardForm({
-        amount: String(amount),
+        amount: String(amt),
         iframe: true,
         form: {
           id: 'card-form',
@@ -72,69 +69,76 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
         },
         callbacks: {
           onFormMounted: (error: unknown) => {
-            if (error) {
-              console.error('[CardForm] onFormMounted error:', error);
-              setSdkStatus('error');
-              return;
-            }
+            if (error) { console.error('[CardForm] mount error:', error); return; }
             setFormMounted(true);
           },
           onSubmit: async (event: { preventDefault: () => void }) => {
             event.preventDefault();
             if (!cardFormRef.current) return;
-            const data = cardFormRef.current.getCardFormData();
-            onToken(data);
+            onTokenRef.current(cardFormRef.current.getCardFormData());
           },
           onError: (errors: unknown) => {
-            console.error('[CardForm] validation errors:', errors);
+            console.error('[CardForm] errors:', errors);
           },
         },
       });
-
       cardFormRef.current = cf as unknown as CardFormInstance;
-
-      // Fallback: se onFormMounted não disparar em 3s, mostra o formulário mesmo assim
-      setTimeout(() => setFormMounted(true), 3000);
+      // fallback: show form after 4s if onFormMounted never fires
+      setTimeout(() => setFormMounted(true), 4000);
     } catch (err) {
       console.error('[CardForm] init error:', err);
-      setSdkStatus('error');
+      setStatus('error');
     }
-  }, [amount, onToken, MP_PUBLIC_KEY]);
+  };
 
-  // If SDK already loaded when component mounts (e.g., page revisit), init immediately
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.MercadoPago) {
-      initCardForm();
+    const SDK_URL = 'https://sdk.mercadopago.com/v2/mercadopago.js';
+
+    // If SDK already loaded (e.g. navigating back to page)
+    if (window.MercadoPago) {
+      mount(publicKey, amount);
+      return () => { cardFormRef.current?.unmount(); };
     }
+
+    // Load SDK manually — most reliable method
+    let script = document.querySelector<HTMLScriptElement>(`script[src="${SDK_URL}"]`);
+    if (!script) {
+      script = document.createElement('script');
+      script.src = SDK_URL;
+      document.head.appendChild(script);
+    }
+
+    const onLoad = () => mount(publicKey, amount);
+    const onError = () => setStatus('error');
+    script.addEventListener('load', onLoad);
+    script.addEventListener('error', onError);
+
     return () => {
+      script!.removeEventListener('load', onLoad);
+      script!.removeEventListener('error', onError);
       cardFormRef.current?.unmount();
     };
-  }, [initCardForm]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const fieldClass =
-    'w-full min-h-[48px] border-[1.5px] border-gray-200 rounded-xl bg-white transition-all overflow-hidden';
-  const inputClass =
-    'w-full h-12 px-4 border-[1.5px] border-gray-200 rounded-xl text-base outline-none transition-all bg-white focus:border-[#00B4D8] focus:ring-2 focus:ring-[#00B4D8]/10';
+  const fieldClass = 'w-full min-h-[48px] border-[1.5px] border-gray-200 rounded-xl bg-white transition-all overflow-hidden';
+  const inputClass = 'w-full h-12 px-4 border-[1.5px] border-gray-200 rounded-xl text-base outline-none transition-all bg-white focus:border-[#00B4D8] focus:ring-2 focus:ring-[#00B4D8]/10';
   const labelClass = 'block text-sm font-bold text-gray-700 mb-1.5';
 
-  if (sdkStatus === 'error') {
+  if (status === 'error') {
     return (
-      <div
-        className="p-5 rounded-2xl text-center space-y-3"
-        style={{ background: '#FEF2F2', border: '1.5px solid #FECACA' }}
-      >
+      <div className="p-5 rounded-2xl text-center space-y-3" style={{ background: '#FEF2F2', border: '1.5px solid #FECACA' }}>
         <AlertCircle className="w-8 h-8 text-red-400 mx-auto" />
         <p className="font-bold text-red-700 text-sm">Erro ao carregar formulário do cartão</p>
         <p className="text-red-600 text-xs">
-          {!MP_PUBLIC_KEY || MP_PUBLIC_KEY.includes('xxxx')
-            ? 'Public Key do Mercado Pago não configurada no .env.local'
-            : 'Verifique sua conexão com a internet e recarregue a página'}
+          {!publicKey ? 'Public Key do Mercado Pago não configurada' : 'Recarregue a página e tente novamente'}
         </p>
         <button
           onClick={() => {
-            setSdkStatus('loading');
+            initializedRef.current = false;
+            setStatus('loading');
             setFormMounted(false);
-            setTimeout(initCardForm, 100);
+            setTimeout(() => mount(publicKey, amount), 200);
           }}
           className="flex items-center gap-2 text-xs font-bold text-red-600 mx-auto hover:text-red-800 transition-colors"
         >
@@ -146,15 +150,6 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
 
   return (
     <>
-      {/* Load SDK via Next.js Script — onLoad fires exactly when ready */}
-      <Script
-        src="https://sdk.mercadopago.com/v2/mercadopago.js"
-        strategy="afterInteractive"
-        onLoad={initCardForm}
-        onError={() => setSdkStatus('error')}
-      />
-
-      {/* Loading indicator */}
       {!formMounted && (
         <div className="flex items-center justify-center gap-2 py-3 text-gray-400 text-sm mb-2">
           <Loader2 className="w-4 h-4 animate-spin" />
@@ -162,18 +157,13 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
         </div>
       )}
 
-      <form
-        id="card-form"
-        style={{ opacity: formMounted ? 1 : 0.3, transition: 'opacity 0.4s' }}
-      >
+      <form id="card-form" style={{ opacity: formMounted ? 1 : 0.3, transition: 'opacity 0.4s' }}>
         <div className="space-y-4">
-          {/* Card number */}
           <div>
             <label className={labelClass}>Número do cartão</label>
             <div id="mp-card-number" className={fieldClass} style={{ padding: '12px 14px' }} />
           </div>
 
-          {/* Expiry + CVV */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>Validade</label>
@@ -185,62 +175,34 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
             </div>
           </div>
 
-          {/* Cardholder name */}
           <div>
             <label className={labelClass}>Nome no cartão</label>
-            <input
-              type="text"
-              id="mp-cardholder-name"
-              className={inputClass}
-              placeholder="NOME SOBRENOME"
-              style={{ textTransform: 'uppercase' }}
-            />
+            <input type="text" id="mp-cardholder-name" className={inputClass} placeholder="NOME SOBRENOME" style={{ textTransform: 'uppercase' }} />
           </div>
 
-          {/* Hidden issuer */}
           <select id="mp-issuer" className="hidden" aria-hidden="true" />
 
-          {/* Installments */}
           <div>
             <label className={labelClass}>Parcelas</label>
-            <select
-              id="mp-installments"
-              className="w-full h-12 px-4 border-[1.5px] border-gray-200 rounded-xl bg-white text-base font-medium outline-none focus:border-[#00B4D8] focus:ring-2 focus:ring-[#00B4D8]/10 transition-all cursor-pointer"
-            />
+            <select id="mp-installments" className="w-full h-12 px-4 border-[1.5px] border-gray-200 rounded-xl bg-white text-base font-medium outline-none focus:border-[#00B4D8] focus:ring-2 focus:ring-[#00B4D8]/10 transition-all cursor-pointer" />
           </div>
 
-          {/* ID type + number */}
           <div className="grid grid-cols-5 gap-2">
             <div className="col-span-2">
               <label className={labelClass}>Documento</label>
-              <select
-                id="mp-identification-type"
-                className="w-full h-12 px-3 border-[1.5px] border-gray-200 rounded-xl bg-white text-sm font-medium outline-none focus:border-[#00B4D8] transition-all"
-              />
+              <select id="mp-identification-type" className="w-full h-12 px-3 border-[1.5px] border-gray-200 rounded-xl bg-white text-sm font-medium outline-none focus:border-[#00B4D8] transition-all" />
             </div>
             <div className="col-span-3">
               <label className={labelClass}>Número</label>
-              <input
-                type="text"
-                id="mp-identification-number"
-                className={inputClass}
-                placeholder="000.000.000-00"
-              />
+              <input type="text" id="mp-identification-number" className={inputClass} placeholder="000.000.000-00" />
             </div>
           </div>
 
-          {/* Email */}
           <div>
             <label className={labelClass}>E-mail</label>
-            <input
-              type="email"
-              id="mp-cardholder-email"
-              className={inputClass}
-              placeholder="seu@email.com"
-            />
+            <input type="email" id="mp-cardholder-email" className={inputClass} placeholder="seu@email.com" />
           </div>
 
-          {/* Submit */}
           <button
             type="submit"
             disabled={loading || !formMounted}
@@ -252,10 +214,7 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
             }}
           >
             {loading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Processando pagamento...
-              </>
+              <><Loader2 className="w-5 h-5 animate-spin" /> Processando pagamento...</>
             ) : (
               '🔒 Finalizar Compra com Segurança'
             )}
