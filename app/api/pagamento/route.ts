@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const transactionAmount = items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0);
+    const transactionAmount = Math.round(items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0) * 100) / 100;
 
     const payerInfo = {
       email: payer.email,
