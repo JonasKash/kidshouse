@@ -51,17 +51,39 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
     
     const waitForSDK = () => {
       return new Promise<void>((resolve, reject) => {
-        if (window.MercadoPago) return resolve();
+        const check = () => {
+          if (window.MercadoPago) {
+            resolve();
+            return true;
+          }
+          return false;
+        };
+
+        if (check()) return;
+        
+        console.log('[MP] SDK not found on start, waiting/injecting...');
         
         let attempts = 0;
         const interval = setInterval(() => {
           attempts++;
-          if (window.MercadoPago) {
+          
+          if (check()) {
             clearInterval(interval);
-            resolve();
-          } else if (attempts > 30) { // 15 seconds
+            return;
+          }
+
+          // After 4 attempts (2s), if still not found, try a forced injection
+          if (attempts === 4) {
+             console.log('[MP] Forced rescue injection started...');
+             const s = document.createElement('script');
+             s.src = 'https://sdk.mercadopago.com/v2/mercadopago.js';
+             s.async = true;
+             document.head.appendChild(s);
+          }
+
+          if (attempts > 40) { // 20 seconds total
             clearInterval(interval);
-            reject(new Error('Sistema de pagamento não respondeu. Verifique sua conexão ou AdBlock.'));
+            reject(new Error('Falha crítica de carregamento. O script do Mercado Pago foi bloqueado pelo seu navegador ou conexão.'));
           }
         }, 500);
       });

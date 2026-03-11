@@ -67,6 +67,9 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
 
+        {/* Mercado Pago SDK - Raw injection for maximum reliability */}
+        <script src="https://sdk.mercadopago.com/v2/mercadopago.js" defer></script>
+
         {/* Favicon */}
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
@@ -118,12 +121,6 @@ export default function RootLayout({
             </Script>
           </>
         )}
-
-        {/* Mercado Pago SDK - Load early to avoid initialization issues */}
-        <Script
-          src="https://sdk.mercadopago.com/v2/mercadopago.js"
-          strategy="beforeInteractive"
-        />
 
         <CartProvider>
           {children}
