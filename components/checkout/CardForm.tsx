@@ -21,6 +21,12 @@ interface CardFormData {
 interface CardFormProps {
   amount: number;
   mpPublicKey: string;
+  payerData?: {
+    email: string;
+    cpf: string;
+    firstName: string;
+    lastName: string;
+  };
   onToken: (data: CardFormData) => void;
   loading?: boolean;
 }
@@ -86,13 +92,15 @@ const SecureCardFields = memo(function SecureCardFields({
 
 let mpInitialized = false;
 
-export default function CardForm({ amount, mpPublicKey, onToken, loading = false }: CardFormProps) {
+export default function CardForm({ amount, mpPublicKey, payerData, onToken, loading = false }: CardFormProps) {
   const publicKey = mpPublicKey || process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || 'APP_USR-97f1dfa1-c950-49a7-bf24-78c4d613f272';
 
-  const [cardholderName, setCardholderName] = useState('');
-  const [cardholderEmail, setCardholderEmail] = useState('');
+  const [cardholderName, setCardholderName] = useState(
+    payerData ? `${payerData.firstName} ${payerData.lastName}`.toUpperCase() : ''
+  );
+  const [cardholderEmail, setCardholderEmail] = useState(payerData?.email || '');
   const [docType, setDocType] = useState('CPF');
-  const [docNumber, setDocNumber] = useState('');
+  const [docNumber, setDocNumber] = useState(payerData?.cpf || '');
   const [installments, setInstallments] = useState('1');
   const [paymentMethodId, setPaymentMethodId] = useState('');
   const [issuerId, setIssuerId] = useState('');
@@ -220,8 +228,19 @@ export default function CardForm({ amount, mpPublicKey, onToken, loading = false
                 type="text"
                 className={input}
                 placeholder="000.000.000-00"
-                value={docNumber}
-                onChange={e => setDocNumber(e.target.value)}
+                value={docType === 'CPF' ? (
+                  docNumber.length <= 11 
+                    ? docNumber.replace(/\D/g, '').replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
+                    : docNumber
+                ) : docNumber}
+                onChange={e => {
+                  let v = e.target.value;
+                  if (docType === 'CPF') {
+                    v = v.replace(/\D/g, '');
+                    if (v.length > 11) v = v.slice(0, 11);
+                  }
+                  setDocNumber(v);
+                }}
                 required
               />
             </div>

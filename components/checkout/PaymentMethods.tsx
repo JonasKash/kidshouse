@@ -126,6 +126,7 @@ export default function PaymentMethods({
           <CardForm
             amount={total}
             mpPublicKey={mpPublicKey}
+            payerData={payerData}
             loading={loading}
             onToken={handleCardSubmit}
           />
