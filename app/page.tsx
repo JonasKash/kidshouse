@@ -12,10 +12,7 @@ import ReviewsSection from '@/components/ReviewsSection';
 import StickyBuyBar from '@/components/StickyBuyBar';
 import Footer from '@/components/Footer';
 import { viewContent } from '@/lib/pixel';
-import { useCart } from '@/context/CartContext';
-
 export default function Home() {
-  const { addToCart } = useCart();
   useEffect(() => {
     viewContent();
   }, []);
@@ -62,92 +59,6 @@ export default function Home() {
         {/* ======== PRODUCT DESCRIPTION SECTIONS ======== */}
         <ProductSections />
 
-        {/* ======== RELATED PRODUCTS ======== */}
-        <section className="py-16" style={{ background: '#F8F9FF' }}>
-          <div className="max-w-6xl mx-auto px-4">
-            <div className="text-center mb-10">
-              <span
-                className="inline-block text-xs font-bold uppercase tracking-widest mb-3 px-3 py-1 rounded-full"
-                style={{ background: 'rgba(0,180,216,0.12)', color: '#00B4D8' }}
-              >
-                Complete sua coleção
-              </span>
-              <h2
-                className="font-bold"
-                style={{ fontFamily: "'Poppins', sans-serif", fontSize: 'clamp(1.5rem, 3vw, 2rem)' }}
-              >
-                Produtos Relacionados
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
-              {[
-                { name: 'Pack 2 Bolas Surpresa', price: 49.9, emoji: '🎱', count: '2 bolas' },
-                { name: 'Pack 5 Bolas Surpresa', price: 109.9, emoji: '🎯', count: '5 bolas', popular: true },
-              ].map((product) => (
-                <div
-                  key={product.name}
-                  className="relative bg-white rounded-3xl overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-xl cursor-pointer"
-                  style={{ border: '1.5px solid #E5E7EB', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}
-                >
-                  {product.popular && (
-                    <div
-                      className="absolute top-3 right-3 text-white text-xs font-black px-2.5 py-1 rounded-full z-10"
-                      style={{ background: 'linear-gradient(135deg, #FF8C42, #FF6B6B)' }}
-                    >
-                      🔥 Popular
-                    </div>
-                  )}
-                  <div
-                    className="h-36 flex items-center justify-center overflow-hidden bg-white"
-                  >
-                    {product.emoji === '🎱' ? (
-                      <img 
-                        src="/DM_20260311022954_001.webp" 
-                        alt={product.name} 
-                        className="w-full h-full object-cover" 
-                      />
-                    ) : product.emoji === '🎯' ? (
-                      <img 
-                        src="/DM_20260311023339_001.webp" 
-                        alt={product.name} 
-                        className="w-full h-full object-contain" 
-                      />
-                    ) : (
-                      <span className="text-6xl">{product.emoji}</span>
-                    )}
-                  </div>
-                  <div className="p-5">
-                    <p className="font-bold text-gray-900 mb-1">{product.name}</p>
-                    <p className="text-sm text-gray-500 mb-3">{product.count} — Mini Brands Fill the Fridge</p>
-                    <div className="flex items-center justify-between">
-                      <span
-                        className="font-black text-xl"
-                        style={{ color: '#00B4D8', fontFamily: "'Poppins', sans-serif" }}
-                      >
-                        R$ {product.price.toFixed(2).replace('.', ',')}
-                      </span>
-                      <button
-                        onClick={() => addToCart({
-                          id: product.name.includes('2') ? 'pack2' : 'pack5',
-                          name: product.name,
-                          price: product.price,
-                          quantity: 1,
-                          emoji: product.emoji
-                        })}
-                        className="flex items-center gap-1.5 text-white text-xs font-bold px-4 py-2 rounded-full transition-all hover:scale-105 active:scale-95"
-                        style={{ background: 'linear-gradient(135deg, #06D6A0, #00B4D8)' }}
-                      >
-                        <Zap className="w-3 h-3 fill-white" />
-                        Adicionar
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
 
         {/* ======== REVIEWS ======== */}
         <ReviewsSection />
@@ -182,8 +93,9 @@ export default function Home() {
             <p className="text-white/80 text-lg mb-8 max-w-md mx-auto">
               Frete Grátis + Parcelamento em até 12x sem juros
             </p>
-            <Link
+            <a
               href="/checkout"
+              onClick={() => { if (typeof window !== 'undefined' && (window as any).fbq) { (window as any).fbq('track', 'InitiateCheckout'); } }}
               className="inline-flex items-center gap-3 text-white font-black text-xl px-10 py-5 rounded-full transition-all hover:scale-105 hover:shadow-2xl"
               style={{
                 background: 'rgba(255,255,255,0.2)',
@@ -194,7 +106,7 @@ export default function Home() {
             >
               <Zap className="w-6 h-6 fill-white" />
               COMPRAR AGORA — R$ 149,00
-            </Link>
+            </a>
             <p className="text-white/60 text-sm mt-4">
               ✅ 100% Seguro | ↩️ 7 dias para devolver | 🚚 Frete Grátis
             </p>

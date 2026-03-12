@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ShoppingCart, Zap, Star, ChevronDown } from 'lucide-react';
+import { Zap, Star, ChevronDown } from 'lucide-react';
 import TrustBadges from './TrustBadges';
 
 const variants = [
@@ -204,7 +204,7 @@ export default function ProductInfo() {
       {/* CTAs */}
       <div className="flex flex-col gap-3">
         <a
-          href="https://ggcheckout.com.br/checkout/v2/eFVZqmFdbzaoHss6XIfr"
+          href="/checkout"
           onClick={() => { if (typeof window !== 'undefined' && (window as any).fbq) { (window as any).fbq('track', 'InitiateCheckout'); } }}
           className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl text-white font-black text-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.99]"
           style={{
@@ -219,20 +219,6 @@ export default function ProductInfo() {
           <span className="text-sm font-bold opacity-90">→</span>
         </a>
 
-        <a
-          href="https://ggcheckout.com.br/checkout/v2/eFVZqmFdbzaoHss6XIfr"
-          onClick={() => { if (typeof window !== 'undefined' && (window as any).fbq) { (window as any).fbq('track', 'InitiateCheckout'); } }}
-          className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl font-bold text-base transition-all duration-200 hover:scale-[1.01]"
-          style={{
-            background: 'transparent',
-            border: '2px solid #00B4D8',
-            color: '#00B4D8',
-            fontFamily: "'Poppins', sans-serif",
-          }}
-        >
-          <ShoppingCart className="w-4.5 h-4.5" />
-          Adicionar ao Carrinho
-        </a>
       </div>
 
       {/* Trust badges compact */}

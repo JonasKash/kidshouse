@@ -2,14 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ShoppingCart, Menu, X, Snowflake } from 'lucide-react';
-import { useCart } from '@/context/CartContext';
+import { Menu, X, Snowflake, Zap } from 'lucide-react';
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { cartItems } = useCart();
-  const itemCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 10);
@@ -87,24 +84,18 @@ export default function Header() {
 
           {/* Right side */}
           <div className="flex items-center gap-3">
-            <Link
+            <a
               href="/checkout"
+              onClick={() => { if (typeof window !== 'undefined' && (window as any).fbq) { (window as any).fbq('track', 'InitiateCheckout'); } }}
               className="relative hidden md:flex items-center gap-2 text-white font-bold text-sm px-5 py-2 rounded-full transition-all duration-200 hover:scale-105"
               style={{
                 background: 'rgba(255,255,255,0.2)',
                 border: '1.5px solid rgba(255,255,255,0.4)',
               }}
             >
-              <div className="relative">
-                <ShoppingCart className="w-4 h-4" />
-                {itemCount > 0 && (
-                  <span className="absolute -top-3 -right-3 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-[#0096C7] font-bold">
-                    {itemCount}
-                  </span>
-                )}
-              </div>
-              Carrinho
-            </Link>
+              <Zap className="w-4 h-4 fill-white" />
+              COMPRAR AGORA
+            </a>
 
             {/* Mobile menu toggle */}
             <button
@@ -137,22 +128,15 @@ export default function Header() {
                 </Link>
               );
             })}
-            <Link
+            <a
               href="/checkout"
-              onClick={() => setMobileOpen(false)}
+              onClick={() => { setMobileOpen(false); if (typeof window !== 'undefined' && (window as any).fbq) { (window as any).fbq('track', 'InitiateCheckout'); } }}
               className="flex items-center justify-center gap-2 text-white font-bold py-3 rounded-full mt-2 relative"
               style={{ background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.4)' }}
             >
-              <div className="relative">
-                <ShoppingCart className="w-4 h-4" />
-                {itemCount > 0 && (
-                  <span className="absolute -top-3 -right-3 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-[#0090AE] font-bold">
-                    {itemCount}
-                  </span>
-                )}
-              </div>
-              Ir para o Checkout
-            </Link>
+              <Zap className="w-4 h-4 fill-white" />
+              COMPRAR AGORA
+            </a>
           </div>
         )}
       </header>

@@ -133,7 +133,6 @@ export default function RootLayout({
 
         <CartProvider>
           {children}
-          <PurchaseNotification />
         </CartProvider>
 
         <Toaster

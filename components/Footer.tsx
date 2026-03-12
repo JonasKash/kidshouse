@@ -72,10 +72,9 @@ export default function Footer() {
             </h4>
             <ul className="space-y-2">
               {[
-                { label: 'Mini Geladeira Kids™', href: '/' },
-                { label: 'Pack 2 Bolas Surpresa', href: '/checkout' },
-                { label: 'Pack 5 Bolas Surpresa', href: '/checkout' },
+                { label: 'Mini Geladeira Kids™', href: '/checkout' },
                 { label: 'Avaliações', href: '#reviews' },
+                { label: 'Dúvidas', href: '#faq' },
               ].map((link) => (
                 <li key={link.label}>
                   <Link

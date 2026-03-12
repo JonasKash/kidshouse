@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ShoppingCart } from 'lucide-react';
+import { Zap } from 'lucide-react';
 
 export default function StickyBuyBar() {
   const [visible, setVisible] = useState(false);
@@ -46,7 +46,7 @@ export default function StickyBuyBar() {
 
       {/* CTA */}
       <a
-        href="https://ggcheckout.com.br/checkout/v2/eFVZqmFdbzaoHss6XIfr"
+        href="/checkout"
         onClick={() => { if (typeof window !== 'undefined' && (window as any).fbq) { (window as any).fbq('track', 'InitiateCheckout'); } }}
         className="flex-shrink-0 flex items-center gap-1.5 text-white font-bold text-sm px-5 py-3 rounded-full"
         style={{
@@ -55,7 +55,7 @@ export default function StickyBuyBar() {
           whiteSpace: 'nowrap',
         }}
       >
-        <ShoppingCart className="w-4 h-4" />
+        <Zap className="w-4 h-4 fill-white" />
         Comprar
       </a>
     </div>
