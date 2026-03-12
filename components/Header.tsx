@@ -86,7 +86,6 @@ export default function Header() {
           <div className="flex items-center gap-3">
             <a
               href="https://ggcheckout.com.br/checkout/v2/eFVZqmFdbzaoHss6XIfr"
-              onClick={() => { if (typeof window !== 'undefined' && (window as any).fbq) { (window as any).fbq('track', 'InitiateCheckout'); } }}
               className="relative hidden md:flex items-center gap-2 text-white font-bold text-sm px-5 py-2 rounded-full transition-all duration-200 hover:scale-105"
               style={{
                 background: 'rgba(255,255,255,0.2)',
@@ -130,7 +129,6 @@ export default function Header() {
             })}
             <a
               href="https://ggcheckout.com.br/checkout/v2/eFVZqmFdbzaoHss6XIfr"
-              onClick={() => { setMobileOpen(false); if (typeof window !== 'undefined' && (window as any).fbq) { (window as any).fbq('track', 'InitiateCheckout'); } }}
               className="flex items-center justify-center gap-2 text-white font-bold py-3 rounded-full mt-2 relative"
               style={{ background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.4)' }}
             >

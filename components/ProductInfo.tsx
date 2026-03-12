@@ -205,7 +205,6 @@ export default function ProductInfo() {
       <div className="flex flex-col gap-3">
         <a
           href="https://ggcheckout.com.br/checkout/v2/eFVZqmFdbzaoHss6XIfr"
-          onClick={() => { if (typeof window !== 'undefined' && (window as any).fbq) { (window as any).fbq('track', 'InitiateCheckout'); } }}
           className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl text-white font-black text-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.99]"
           style={{
             background: 'linear-gradient(135deg, #06D6A0 0%, #00B4D8 100%)',

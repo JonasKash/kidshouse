@@ -47,7 +47,6 @@ export default function StickyBuyBar() {
       {/* CTA */}
       <a
         href="https://ggcheckout.com.br/checkout/v2/eFVZqmFdbzaoHss6XIfr"
-        onClick={() => { if (typeof window !== 'undefined' && (window as any).fbq) { (window as any).fbq('track', 'InitiateCheckout'); } }}
         className="flex-shrink-0 flex items-center gap-1.5 text-white font-bold text-sm px-5 py-3 rounded-full"
         style={{
           background: 'linear-gradient(135deg, #06D6A0, #00B4D8)',
