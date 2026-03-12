@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { ShoppingCart, Zap, Star, ChevronDown } from 'lucide-react';
 import TrustBadges from './TrustBadges';
 
@@ -204,8 +203,9 @@ export default function ProductInfo() {
 
       {/* CTAs */}
       <div className="flex flex-col gap-3">
-        <Link
-          href="/checkout"
+        <a
+          href="https://ggcheckout.com.br/checkout/v2/eFVZqmFdbzaoHss6XIfr"
+          onClick={() => { if (typeof window !== 'undefined' && (window as any).fbq) { (window as any).fbq('track', 'InitiateCheckout'); } }}
           className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl text-white font-black text-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.99]"
           style={{
             background: 'linear-gradient(135deg, #06D6A0 0%, #00B4D8 100%)',
@@ -217,10 +217,11 @@ export default function ProductInfo() {
           <Zap className="w-5 h-5 fill-white" />
           COMPRAR AGORA
           <span className="text-sm font-bold opacity-90">→</span>
-        </Link>
+        </a>
 
-        <Link
-          href="/checkout"
+        <a
+          href="https://ggcheckout.com.br/checkout/v2/eFVZqmFdbzaoHss6XIfr"
+          onClick={() => { if (typeof window !== 'undefined' && (window as any).fbq) { (window as any).fbq('track', 'InitiateCheckout'); } }}
           className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl font-bold text-base transition-all duration-200 hover:scale-[1.01]"
           style={{
             background: 'transparent',
@@ -231,7 +232,7 @@ export default function ProductInfo() {
         >
           <ShoppingCart className="w-4.5 h-4.5" />
           Adicionar ao Carrinho
-        </Link>
+        </a>
       </div>
 
       {/* Trust badges compact */}

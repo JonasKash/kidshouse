@@ -75,8 +75,8 @@ export async function POST(req: NextRequest) {
       payer: {
         first_name: payer.firstName,
         last_name: payer.lastName,
-        is_prime_user: '0',
-        is_first_purchase_online: '1',
+        is_prime_user: false,
+        is_first_purchase_online: true,
         ...(phoneClean.length >= 10 && {
           phone: {
             area_code: phoneClean.slice(0, 2),
