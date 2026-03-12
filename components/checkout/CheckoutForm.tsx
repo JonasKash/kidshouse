@@ -11,7 +11,6 @@ import PaymentMethods from './PaymentMethods';
 import { initiateCheckout, addPaymentInfo } from '@/lib/pixel';
 import { beginCheckout } from '@/lib/gtag';
 import { useCart } from '@/context/CartContext';
-import { supabase } from '@/lib/supabase';
 
 /* ============================================================
    CPF Helpers
@@ -239,18 +238,6 @@ export default function CheckoutForm({
     const ok = await trigger(['firstName', 'lastName', 'email', 'cpf', 'phone']);
     if (ok) {
       setStep(2);
-      // Save partial data as lead
-      const data = watch();
-      await supabase.from('checkouts').upsert({
-        email: data.email,
-        cpf: data.cpf,
-        first_name: data.firstName,
-        last_name: data.lastName,
-        phone: data.phone,
-        status: 'partial_step_1',
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'email,cpf' });
-
       // Track qualified lead
       initiateCheckout(basePrice);
       beginCheckout(basePrice);
@@ -262,28 +249,6 @@ export default function CheckoutForm({
     if (ok) {
       setStep(3);
       addPaymentInfo();
-
-      // Save full data to Supabase
-      const data = watch();
-      await supabase.from('checkouts').upsert({
-        email: data.email,
-        cpf: data.cpf,
-        first_name: data.firstName,
-        last_name: data.lastName,
-        phone: data.phone,
-        cep: data.cep,
-        street: data.street,
-        number: data.number,
-        complement: data.complement,
-        neighborhood: data.neighborhood,
-        city: data.city,
-        state: data.state,
-        total: total,
-        order_bump: orderBump,
-        cart_items: cartItems,
-        status: 'pending_payment',
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'email,cpf' });
     }
   };
 
@@ -301,23 +266,6 @@ export default function CheckoutForm({
     router.push(`/obrigado?${params.toString()}`);
   }, [router, total]);
 
-  // Sync Order Bump change to Supabase in real-time (Step 3)
-  useEffect(() => {
-    if (step === 3) {
-      const data = watch();
-      if (data.email && data.cpf) {
-        supabase
-          .from('checkouts')
-          .update({ 
-            order_bump: orderBump,
-            total: total, // Atualiza o total também
-            updated_at: new Date().toISOString()
-          })
-          .match({ email: data.email, cpf: data.cpf })
-          .then();
-      }
-    }
-  }, [orderBump, step, total, watch]);
 
   return (
     <div className="max-w-xl mx-auto">

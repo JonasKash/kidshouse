@@ -72,7 +72,7 @@ export default function Footer() {
             </h4>
             <ul className="space-y-2">
               {[
-                { label: 'Mini Geladeira Kids™', href: '/checkout' },
+                { label: 'Mini Geladeira Kids™', href: 'https://ggcheckout.com.br/checkout/v2/eFVZqmFdbzaoHss6XIfr' },
                 { label: 'Avaliações', href: '#reviews' },
                 { label: 'Dúvidas', href: '#faq' },
               ].map((link) => (

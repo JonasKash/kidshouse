@@ -94,7 +94,7 @@ export default function Home() {
               Frete Grátis + Parcelamento em até 12x sem juros
             </p>
             <a
-              href="/checkout"
+              href="https://ggcheckout.com.br/checkout/v2/eFVZqmFdbzaoHss6XIfr"
               onClick={() => { if (typeof window !== 'undefined' && (window as any).fbq) { (window as any).fbq('track', 'InitiateCheckout'); } }}
               className="inline-flex items-center gap-3 text-white font-black text-xl px-10 py-5 rounded-full transition-all hover:scale-105 hover:shadow-2xl"
               style={{
